@@ -1,1 +1,70 @@
-/* Yemekhane QR — base styles */
+/* Yemekhane QR — base styles (mobile-first) */
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #f4f6f8;
+    color: #2c3e50;
+}
+
+main {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 16px;
+    text-align: center;
+}
+
+h1 { font-size: 1.4rem; margin: 12px 0; }
+
+form { display: flex; flex-direction: column; gap: 8px; }
+label { text-align: left; font-size: 0.9rem; }
+input {
+    padding: 12px;
+    font-size: 1rem;
+    border: 1px solid #ccd4db;
+    border-radius: 6px;
+}
+button {
+    padding: 12px;
+    font-size: 1rem;
+    border: 0;
+    border-radius: 6px;
+    background: #2980b9;
+    color: #fff;
+    cursor: pointer;
+}
+
+.error { color: #c0392b; font-weight: bold; }
+
+/* QR page */
+#qrcode {
+    display: flex;
+    justify-content: center;
+    margin: 16px auto;
+    min-height: 280px;
+}
+
+.balance-line { font-size: 1.6rem; font-weight: bold; margin: 8px 0; }
+.countdown-line { font-size: 0.95rem; color: #7f8c8d; }
+
+.low-band {
+    background: #c0392b;
+    color: #fff;
+    padding: 12px;
+    text-align: center;
+    border-radius: 6px;
+    font-weight: bold;
+    margin: 8px 0;
+}
+
+.qr-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-top: 20px;
+}
+.qr-actions a { color: #2980b9; }
+.qr-actions form { display: inline; }
+.qr-actions button { background: #7f8c8d; padding: 8px 16px; }

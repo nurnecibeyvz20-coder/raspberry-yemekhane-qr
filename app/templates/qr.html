@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}QR Kodum — Yemekhane QR{% endblock %}
+{% block content %}
+<main class="qr-page">
+    <h1>{{ user.ad_soyad }}</h1>
+    <div id="low-band" class="low-band"
+         style="display: {{ 'block' if low_balance else 'none' }};">
+        Bakiyeniz yetersiz
+    </div>
+    <div id="qrcode"></div>
+    <p class="balance-line">Bakiye: <span id="balance">{{ user.balance }} TL</span></p>
+    <p class="countdown-line">Yenilenmeye: <span id="countdown">45</span> sn</p>
+    <nav class="qr-actions">
+        <a href="/change-password">Şifre Değiştir</a>
+        <form method="post" action="/logout">
+            <button type="submit">Çıkış</button>
+        </form>
+    </nav>
+</main>
+<script src="/static/qrcode.min.js"></script>
+<script>
+let qr = null;
+let countdownTimer = null;
+
+function startCountdown(s) {
+    if (countdownTimer !== null) clearInterval(countdownTimer);
+    let remaining = s;
+    document.getElementById("countdown").textContent = remaining;
+    countdownTimer = setInterval(function () {
+        remaining -= 1;
+        if (remaining <= 0) {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+            refresh();
+            return;
+        }
+        document.getElementById("countdown").textContent = remaining;
+    }, 1000);
+}
+
+async function refresh() {
+    const r = await fetch("/api/qr-token");
+    if (!r.ok) { location.href = "/login"; return; }
+    const d = await r.json();
+    document.getElementById("qrcode").innerHTML = "";
+    qr = new QRCode(document.getElementById("qrcode"),
+                    {text: d.token, width: 280, height: 280});
+    document.getElementById("balance").textContent = d.balance + " TL";
+    document.getElementById("low-band").style.display =
+        d.low_balance ? "block" : "none";
+    startCountdown(45);
+}
+
+refresh();
+</script>
+{% endblock %}

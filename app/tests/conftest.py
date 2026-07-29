@@ -56,3 +56,36 @@ def seeded_db():
     yield session
     app.dependency_overrides.pop(get_db, None)
     session.close()
+
+@pytest.fixture
+def seeded_db_low_balance():
+    from decimal import Decimal
+    from app.auth import hash_password
+    from app.models import User
+
+    engine = _make_engine()
+    Base.metadata.create_all(engine)
+    TestingSession = sessionmaker(bind=engine, autoflush=False)
+
+    session = TestingSession()
+    user = User(
+        sicil_no="1003",
+        ad_soyad="Az Bakiye",
+        role="personel",
+        password_hash=hash_password("dogru123"),
+        balance=Decimal("50.00"),
+    )
+    session.add(user)
+    session.commit()
+
+    def override_get_db():
+        db = TestingSession()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    yield session
+    app.dependency_overrides.pop(get_db, None)
+    session.close()
