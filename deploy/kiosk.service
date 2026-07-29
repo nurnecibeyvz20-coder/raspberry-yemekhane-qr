@@ -1,0 +1,19 @@
+[Unit]
+Description=Yemekhane Kiosk Browser
+After=graphical.target network-online.target
+Wants=graphical.target
+
+[Service]
+User=pi
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/pi/.Xauthority
+ExecStartPre=/bin/sh -c 'until curl -sf http://localhost/health; do sleep 2; done'
+ExecStartPre=/bin/sh -c 'xset s off; xset -dpms; xset s noblank'
+ExecStart=/usr/bin/chromium-browser --kiosk --noerrdialogs \
+  --disable-restore-session-state --disable-infobars \
+  --check-for-update-interval=31536000 http://localhost/kiosk
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target
