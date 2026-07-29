@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Yemekhane Kiosk</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; }
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            cursor: none;
+        }
+        .screen {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+        }
+        .screen.active { display: flex; }
+        #idle .logo { font-size: 5rem; margin-bottom: 24px; }
+        #idle h1 { font-size: 3rem; font-weight: 600; }
+        #clock { font-size: 2.2rem; margin-top: 32px; opacity: 0.8; font-variant-numeric: tabular-nums; }
+        #result.green { background: #1b7a3d; }
+        #result.yellow { background: #b8860b; }
+        #result.red { background: #a52828; }
+        #result-icon { font-size: 6rem; margin-bottom: 24px; }
+        #result-message { font-size: 3rem; font-weight: 700; }
+        #result-name { font-size: 2.2rem; margin-top: 16px; }
+        #result-balance { font-size: 2rem; margin-top: 12px; opacity: 0.9; }
+        #connecting h1 { font-size: 3rem; }
+        #scan-input {
+            position: absolute;
+            top: -100px;
+            left: -100px;
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <input type="text" id="scan-input" autocomplete="off" autofocus>
+
+    <div id="idle" class="screen active">
+        <div class="logo">🍽️</div>
+        <h1>QR kodunuzu okutun</h1>
+        <div id="clock">--:--:--</div>
+    </div>
+
+    <div id="result" class="screen">
+        <div id="result-icon"></div>
+        <div id="result-message"></div>
+        <div id="result-name"></div>
+        <div id="result-balance"></div>
+    </div>
+
+    <div id="connecting" class="screen" style="background:#444;">
+        <h1>Sistem bağlanıyor...</h1>
+    </div>
+
+    <script>
+    const input = document.getElementById("scan-input");
+    const idle = document.getElementById("idle");
+    const result = document.getElementById("result");
+    const connecting = document.getElementById("connecting");
+    let resetTimer = null;
+
+    function show(el) {
+        for (const s of [idle, result, connecting]) s.classList.remove("active");
+        el.classList.add("active");
+    }
+
+    function backToIdle() {
+        show(idle);
+        input.value = "";
+        input.focus();
+    }
+
+    // Saat
+    function tick() {
+        const now = new Date();
+        document.getElementById("clock").textContent =
+            now.toLocaleTimeString("tr-TR");
+    }
+    tick();
+    setInterval(tick, 1000);
+
+    // Gizli input her zaman odakta kalsın
+    document.addEventListener("click", () => input.focus());
+    input.addEventListener("blur", () => setTimeout(() => input.focus(), 0));
+    input.focus();
+
+    input.addEventListener("keydown", async (e) => {
+        if (e.key === "Enter") {
+            const token = input.value.trim();
+            input.value = "";
+            if (!token) return;
+            try {
+                const r = await fetch("/api/checkin", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({token})
+                });
+                showResult(await r.json());
+            } catch {
+                showConnecting();
+            }
+        }
+    });
+
+    function showResult(d) {
+        const color = d.status === "onay" ? "green"
+                    : d.status === "mukerrer" ? "yellow" : "red";
+        result.className = "screen active " + color;
+        idle.classList.remove("active");
+        connecting.classList.remove("active");
+        document.getElementById("result-icon").textContent =
+            d.ok ? "✔" : (d.status === "mukerrer" ? "⚠" : "✖");
+        document.getElementById("result-message").textContent = d.message || "";
+        document.getElementById("result-name").textContent = d.ad_soyad || "";
+        document.getElementById("result-balance").textContent =
+            d.balance != null ? "Kalan: " + d.balance + " TL" : "";
+        new Audio(d.ok ? "/static/sounds/ok.wav"
+                       : "/static/sounds/error.wav").play().catch(() => {});
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(backToIdle, 5000);
+    }
+
+    function showConnecting() {
+        show(connecting);
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(backToIdle, 3000);
+    }
+    </script>
+</body>
+</html>

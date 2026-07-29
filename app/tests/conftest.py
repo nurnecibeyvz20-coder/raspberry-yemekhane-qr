@@ -8,7 +8,11 @@ from app.db import Base, get_db
 
 @pytest.fixture
 def client():
-    return TestClient(app)
+    return TestClient(app, client=("127.0.0.1", 50000))
+
+@pytest.fixture
+def client_remote():
+    return TestClient(app, client=("192.168.1.50", 50000))
 
 def _make_engine():
     return create_engine(
@@ -28,6 +32,7 @@ def db_session():
 
 @pytest.fixture
 def seeded_db():
+    from decimal import Decimal
     from app.auth import hash_password
     from app.models import User
 
@@ -41,6 +46,7 @@ def seeded_db():
         ad_soyad="Test Personel",
         role="personel",
         password_hash=hash_password("dogru123"),
+        balance=Decimal("500.00"),
     )
     session.add(user)
     session.commit()
@@ -53,7 +59,7 @@ def seeded_db():
             db.close()
 
     app.dependency_overrides[get_db] = override_get_db
-    yield session
+    yield user.id
     app.dependency_overrides.pop(get_db, None)
     session.close()
 
