@@ -69,6 +69,25 @@ def test_update_meal_price(client, admin_db):
     client.post("/admin/settings", data={"meal_price": "150.00"})
     assert admin_db.get(Setting, "meal_price").value == "150.00"
 
+def test_load_balance_rejects_nan(client, admin_db):
+    login_admin(client, admin_db)
+    u = User(sicil_no="3005", ad_soyad="E", role="personel",
+             password_hash="x", balance=Decimal("100.00"))
+    admin_db.add(u); admin_db.commit()
+    r = client.post(f"/admin/users/{u.id}/load-balance",
+                    data={"amount": "NaN"})
+    assert r.status_code == 400
+    admin_db.refresh(u)
+    assert u.balance == Decimal("100.00")
+    assert admin_db.query(Transaction).count() == 0
+
+def test_settings_rejects_nan(client, admin_db):
+    login_admin(client, admin_db)
+    r = client.post("/admin/settings", data={"meal_price": "NaN"})
+    assert r.status_code < 500
+    row = admin_db.get(Setting, "meal_price")
+    assert row is None or row.value != "NaN"
+
 def test_search_users(client, admin_db):
     login_admin(client, admin_db)
     admin_db.add(User(sicil_no="4001", ad_soyad="Mehmet Öz",

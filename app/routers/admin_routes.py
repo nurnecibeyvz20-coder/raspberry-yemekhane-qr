@@ -118,6 +118,8 @@ def load_balance(user_id: int, amount: str = Form(...),
         amt = Decimal(amount)
     except InvalidOperation:
         raise HTTPException(400, "Geçersiz tutar")
+    if not amt.is_finite():
+        raise HTTPException(400, "Geçersiz tutar")
     if amt == 0:
         raise HTTPException(400, "Tutar sıfır olamaz")
     user = _get_user_or_404(db, user_id)
@@ -143,6 +145,8 @@ def update_settings(request: Request,
                     db: Session = Depends(get_db)):
     try:
         price = Decimal(meal_price)
+        if not price.is_finite():
+            raise InvalidOperation
     except InvalidOperation:
         return templates.TemplateResponse(
             request, "admin/settings.html",
