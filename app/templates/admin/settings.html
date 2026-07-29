@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Ayarlar{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+<h1>Ayarlar</h1>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% if saved %}<p class="success">Kaydedildi</p>{% endif %}
+<form method="post" action="/admin/settings">
+    <label>Yemek Fiyatı (TL)
+        <input type="text" name="meal_price" value="{{ meal_price }}" required>
+    </label>
+    <button type="submit">Kaydet</button>
+</form>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Yeni Personel{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+<h1>Yeni Personel</h1>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+<form method="post" action="/admin/users/new">
+    <label>Sicil No
+        <input type="text" name="sicil_no" value="{{ form.sicil_no or '' }}" required>
+    </label><br>
+    <label>Ad Soyad
+        <input type="text" name="ad_soyad" value="{{ form.ad_soyad or '' }}" required>
+    </label><br>
+    <label>Şifre
+        <input type="password" name="password" required>
+    </label><br>
+    <label>Rol
+        <select name="role">
+            <option value="personel" {{ "selected" if form.role != "admin" else "" }}>Personel</option>
+            <option value="admin" {{ "selected" if form.role == "admin" else "" }}>Admin</option>
+        </select>
+    </label><br>
+    <button type="submit">Kaydet</button>
+</form>
+{% endblock %}

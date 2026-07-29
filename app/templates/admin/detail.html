@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ user.ad_soyad }}{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+<h1>{{ user.ad_soyad }}</h1>
+<p>
+    Sicil No: {{ user.sicil_no }}<br>
+    Rol: {{ user.role }}<br>
+    Bakiye: {{ user.balance }} TL<br>
+    Durum: {{ "Aktif" if user.is_active else "Pasif" }}
+</p>
+
+<h2>Bakiye Yükle</h2>
+<form method="post" action="/admin/users/{{ user.id }}/load-balance">
+    <label>Tutar (negatif = düzeltme)
+        <input type="text" name="amount" required>
+    </label>
+    <button type="submit">Yükle</button>
+</form>
+
+<h2>Bilgileri Düzenle</h2>
+<form method="post" action="/admin/users/{{ user.id }}/edit">
+    <label>Ad Soyad
+        <input type="text" name="ad_soyad" value="{{ user.ad_soyad }}" required>
+    </label>
+    <label>Rol
+        <select name="role">
+            <option value="personel" {{ "selected" if user.role == "personel" else "" }}>Personel</option>
+            <option value="admin" {{ "selected" if user.role == "admin" else "" }}>Admin</option>
+        </select>
+    </label>
+    <button type="submit">Kaydet</button>
+</form>
+
+<h2>Şifre Değiştir</h2>
+<form method="post" action="/admin/users/{{ user.id }}/password">
+    <label>Yeni Şifre
+        <input type="password" name="new_password" required>
+    </label>
+    <button type="submit">Değiştir</button>
+</form>
+
+<h2>Hesap Durumu</h2>
+<form method="post" action="/admin/users/{{ user.id }}/toggle-active">
+    <button type="submit">
+        {{ "Pasifleştir" if user.is_active else "Aktifleştir" }}
+    </button>
+</form>
+
+<h2>Son İşlemler</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Tarih</th>
+            <th>Tür</th>
+            <th>Tutar</th>
+            <th>Bakiye</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for t in transactions %}
+        <tr>
+            <td>{{ t.created_at }}</td>
+            <td>{{ t.type }}</td>
+            <td>{{ t.amount }} TL</td>
+            <td>{{ t.balance_after }} TL</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">İşlem yok</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2>Son Yemek Girişleri</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Tarih</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in meal_entries %}
+        <tr>
+            <td>{{ m.entry_date }}</td>
+        </tr>
+        {% else %}
+        <tr><td>Giriş yok</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

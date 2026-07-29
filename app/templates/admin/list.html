@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Personel Listesi{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+<h1>Personel Listesi</h1>
+<form method="get" action="/admin">
+    <input type="text" name="q" value="{{ q }}" placeholder="Sicil no veya ad soyad">
+    <button type="submit">Ara</button>
+</form>
+<p><a href="/admin/users/new">Yeni Personel Ekle</a></p>
+<table>
+    <thead>
+        <tr>
+            <th>Sicil No</th>
+            <th>Ad Soyad</th>
+            <th>Rol</th>
+            <th>Bakiye</th>
+            <th>Durum</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u in users %}
+        <tr>
+            <td>{{ u.sicil_no }}</td>
+            <td><a href="/admin/users/{{ u.id }}">{{ u.ad_soyad }}</a></td>
+            <td>{{ u.role }}</td>
+            <td>{{ u.balance }} TL</td>
+            <td>{{ "Aktif" if u.is_active else "Pasif" }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">Kayıt bulunamadı</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

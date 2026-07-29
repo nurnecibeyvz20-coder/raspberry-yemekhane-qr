@@ -31,6 +31,25 @@ def db_session():
     s.close()
 
 @pytest.fixture
+def admin_db():
+    engine = _make_engine()
+    Base.metadata.create_all(engine)
+    TestingSession = sessionmaker(bind=engine, autoflush=False)
+    session = TestingSession()
+
+    def override_get_db():
+        db = TestingSession()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    yield session
+    app.dependency_overrides.pop(get_db, None)
+    session.close()
+
+@pytest.fixture
 def seeded_db():
     from decimal import Decimal
     from app.auth import hash_password
