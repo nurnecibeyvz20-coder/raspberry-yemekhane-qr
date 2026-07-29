@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Giriş — Yemekhane QR{% endblock %}
+{% block content %}
+<main class="login">
+    <h1>Yemekhane QR</h1>
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+    <form method="post" action="/login">
+        <label for="sicil_no">Sicil No</label>
+        <input type="text" id="sicil_no" name="sicil_no" required autofocus>
+        <label for="password">Şifre</label>
+        <input type="password" id="password" name="password" required>
+        <button type="submit">Giriş Yap</button>
+    </form>
+</main>
+{% endblock %}
