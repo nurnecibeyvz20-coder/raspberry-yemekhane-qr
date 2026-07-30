@@ -43,7 +43,7 @@
   <div class="logo-yuvarlak"><img src="/static/logo.jpg" alt="Karatay Belediyesi"></div>
   <h1>Karatay Belediyesi — Yemekhane</h1>
   <div class="saat" id="clock">--:--:--</div>
-  <div class="yonerge">QR kodunuzu okutun</div>
+  <div class="yonerge" id="yonerge">QR kodunuzu okutun</div>
 </div>
 <div id="result" class="screen">
   <div id="result-icon"></div>
@@ -94,6 +94,21 @@ function tick() {
 }
 tick();
 setInterval(tick, 1000);
+
+// Servis saati durumu: bekleme yonergesini acik/kapali durumuna gore
+// gunceller (kapaliyken personel bosuna QR okutmasin).
+async function durumKontrol() {
+    try {
+        const r = await fetch("/api/kiosk-durum");
+        if (!r.ok) return;
+        const d = await r.json();
+        document.getElementById("yonerge").textContent =
+            d.acik ? "QR kodunuzu okutun"
+                   : "Yemekhane kapalı — Servis: " + d.saatler;
+    } catch {}
+}
+durumKontrol();
+setInterval(durumKontrol, 60000);
 
 // Gizli input her zaman odakta kalsın
 document.addEventListener("click", () => input.focus());
@@ -164,7 +179,8 @@ function showResult(d) {
     document.getElementById("result-message").textContent = d.message || "";
     document.getElementById("result-name").textContent = d.ad_soyad || "";
     document.getElementById("result-balance").textContent =
-        d.balance != null ? "Kalan: " + d.balance + " TL" : "";
+        d.saatler ? "Servis saatleri: " + d.saatler
+                  : (d.balance != null ? "Kalan: " + d.balance + " TL" : "");
     anonsCal(d.anons);
     clearTimeout(resetTimer);
     resetTimer = setTimeout(backToIdle, 5000);

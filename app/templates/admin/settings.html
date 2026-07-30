@@ -7,6 +7,11 @@
   <form method="post" action="/admin/settings">
     <label class="alan-etiket" for="meal_price">Yemek Fiyatı (TL)</label>
     <input class="alan" id="meal_price" type="text" name="meal_price" value="{{ meal_price }}" required>
+    <h3 class="ust-bosluk">Yemekhane Saatleri</h3>
+    <label class="alan-etiket" for="saat_baslangic">Başlangıç</label>
+    <input class="alan" id="saat_baslangic" type="time" name="saat_baslangic" value="{{ saat_baslangic }}">
+    <label class="alan-etiket" for="saat_bitis">Bitiş</label>
+    <input class="alan" id="saat_bitis" type="time" name="saat_bitis" value="{{ saat_bitis }}">
     <button class="btn ust-bosluk" type="submit">Kaydet</button>
   </form>
 </div>

@@ -1,3 +1,4 @@
+from datetime import time
 from decimal import Decimal, InvalidOperation
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -11,7 +12,7 @@ from app.db import get_db
 from app.deps import templates
 from app.flash import get_flash, set_flash
 from app.models import MealEntry, Setting, Transaction, User
-from app.services.checkin import get_meal_price
+from app.services.checkin import get_meal_price, get_service_hours
 from app.services.stats import dashboard_stats, paginate
 
 router = APIRouter(dependencies=[Depends(require_admin)])
@@ -201,16 +202,44 @@ def load_balance(user_id: int, amount: str = Form(...),
         set_flash(resp, f"{user.ad_soyad} bakiyesi {amt} TL düzeltildi")
     return resp
 
+def _current_hours(db: Session) -> tuple[time, time]:
+    """Kayıtlı servis saatlerini OKUR; kayıt yoksa varsayılanı döndürür
+    ama yazmaz (hatalı POST'ta yan etki olmasın diye get_service_hours
+    yerine bu kullanılır)."""
+    bas = db.get(Setting, "saat_baslangic")
+    bit = db.get(Setting, "saat_bitis")
+    return (time.fromisoformat(bas.value) if bas else time(12, 0),
+            time.fromisoformat(bit.value) if bit else time(13, 30))
+
+def _set_setting(db: Session, key: str, value: str) -> None:
+    row = db.get(Setting, key)
+    if row is None:
+        db.add(Setting(key=key, value=value))
+    else:
+        row.value = value
+
+def _settings_context(db: Session, error: str | None) -> dict:
+    bas, bit = _current_hours(db)
+    return {"meal_price": get_meal_price(db),
+            "saat_baslangic": bas.strftime("%H:%M"),
+            "saat_bitis": bit.strftime("%H:%M"),
+            "error": error, "aktif_sayfa": "ayarlar"}
+
 @router.get("/admin/settings", response_class=HTMLResponse)
 def settings_page(request: Request, db: Session = Depends(get_db)):
+    bas, bit = get_service_hours(db)
     return _render_with_flash(
         request, "admin/settings.html",
-        {"meal_price": get_meal_price(db), "error": None,
-         "aktif_sayfa": "ayarlar"})
+        {"meal_price": get_meal_price(db),
+         "saat_baslangic": bas.strftime("%H:%M"),
+         "saat_bitis": bit.strftime("%H:%M"),
+         "error": None, "aktif_sayfa": "ayarlar"})
 
 @router.post("/admin/settings")
 def update_settings(request: Request,
                     meal_price: str = Form(...),
+                    saat_baslangic: str = Form(""),
+                    saat_bitis: str = Form(""),
                     db: Session = Depends(get_db)):
     try:
         price = Decimal(meal_price)
@@ -219,16 +248,29 @@ def update_settings(request: Request,
     except InvalidOperation:
         return templates.TemplateResponse(
             request, "admin/settings.html",
-            {"meal_price": get_meal_price(db),
-             "error": "Geçersiz fiyat", "aktif_sayfa": "ayarlar"},
-            status_code=200)
-    row = db.get(Setting, "meal_price")
-    if row is None:
-        row = Setting(key="meal_price", value=str(price))
-        db.add(row)
-    else:
-        row.value = str(price)
+            _settings_context(db, "Geçersiz fiyat"), status_code=200)
+    # Saatler: boş alan = değiştirme (mevcut değer korunur). İki değer
+    # de doğrulanmadan HİÇBİR ayar yazılmaz (kısmi yazma olmasın).
+    bas = bit = None
+    if saat_baslangic or saat_bitis:
+        cur_bas, cur_bit = _current_hours(db)
+        try:
+            bas = (time.fromisoformat(saat_baslangic)
+                   if saat_baslangic else cur_bas)
+            bit = (time.fromisoformat(saat_bitis)
+                   if saat_bitis else cur_bit)
+            if bit <= bas:
+                raise ValueError
+        except ValueError:
+            return templates.TemplateResponse(
+                request, "admin/settings.html",
+                _settings_context(db, "Geçersiz saat aralığı"),
+                status_code=200)
+    _set_setting(db, "meal_price", str(price))
+    if bas is not None and bit is not None:
+        _set_setting(db, "saat_baslangic", bas.strftime("%H:%M"))
+        _set_setting(db, "saat_bitis", bit.strftime("%H:%M"))
     db.commit()
     resp = RedirectResponse("/admin/settings", status_code=303)
-    set_flash(resp, "Yemek ücreti güncellendi")
+    set_flash(resp, "Ayarlar güncellendi")
     return resp

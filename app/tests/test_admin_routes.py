@@ -108,6 +108,26 @@ def test_settings_rejects_nan(client, admin_db):
     row = admin_db.get(Setting, "meal_price")
     assert row is None or row.value != "NaN"
 
+def test_settings_updates_service_hours(client, admin_db):
+    login_admin(client, admin_db)
+    r = client.post("/admin/settings",
+                    data={"meal_price": "125.00",
+                          "saat_baslangic": "11:30",
+                          "saat_bitis": "14:00"},
+                    follow_redirects=False)
+    assert r.status_code == 303
+    assert admin_db.get(Setting, "saat_baslangic").value == "11:30"
+    assert admin_db.get(Setting, "saat_bitis").value == "14:00"
+
+def test_settings_rejects_invalid_hours(client, admin_db):
+    login_admin(client, admin_db)
+    r = client.post("/admin/settings",
+                    data={"meal_price": "125.00",
+                          "saat_baslangic": "14:00",
+                          "saat_bitis": "12:00"})
+    assert "Geçersiz saat aralığı" in r.text
+    assert admin_db.get(Setting, "saat_baslangic") is None
+
 def test_search_users(client, admin_db):
     login_admin(client, admin_db)
     admin_db.add(User(sicil_no="4001", ad_soyad="Mehmet Öz",
