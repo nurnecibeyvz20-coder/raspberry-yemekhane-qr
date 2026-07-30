@@ -6,7 +6,7 @@ from app.auth import current_user, hash_password, verify_password
 from app.config import settings
 from app.db import get_db
 from app.deps import templates
-from app.models import User
+from app.models import Transaction, User
 from app.qr_token import generate_token
 from app.services.checkin import get_meal_price
 
@@ -17,10 +17,17 @@ def qr_page(request: Request,
             user: User = Depends(current_user),
             db: Session = Depends(get_db)):
     price = get_meal_price(db)
+    gecmis = (db.query(Transaction)
+                .filter_by(user_id=user.id)
+                .order_by(Transaction.created_at.desc(),
+                          Transaction.id.desc())
+                .limit(20).all())
     return templates.TemplateResponse(request, "qr.html", {
         "user": user,
         "meal_price": price,
         "low_balance": user.balance < price,
+        "gecmis": gecmis,
+        "ogun_sayisi": int(user.balance // price),
     })
 
 @router.get("/api/qr-token")
