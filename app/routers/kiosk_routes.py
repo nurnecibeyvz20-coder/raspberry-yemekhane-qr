@@ -1,5 +1,6 @@
 import socket
 import struct
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
@@ -7,7 +8,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.db import get_db
 from app.deps import templates
-from app.services.checkin import process_checkin
+from app.services import checkin as checkin_service
+from app.services.checkin import get_service_hours, process_checkin
 from app.tts import anons_metni, dogrula, imzala, uret
 
 router = APIRouter()
@@ -56,11 +58,27 @@ def kiosk_page(request: Request):
 @router.post("/api/checkin", dependencies=[Depends(localhost_only)])
 def checkin(body: CheckinBody, db: Session = Depends(get_db)):
     r = process_checkin(db, body.token)
-    metin = anons_metni(r)
+    saatler_str = None
+    if r.status == "saat_disi":
+        # checkin modulu uzerinden cagrilir ki process_checkin ile ayni
+        # (test patch'leri dahil) fonksiyon kullanilsin
+        bas, bit = checkin_service.get_service_hours(db)
+        saatler_str = f"{bas:%H:%M} - {bit:%H:%M}"
+        metin = anons_metni(r, saatler=(bas, bit))
+    else:
+        metin = anons_metni(r)
     return {"ok": r.ok, "status": r.status, "message": r.message,
             "ad_soyad": r.ad_soyad,
             "balance": str(r.balance) if r.balance is not None else None,
+            "saatler": saatler_str,
             "anons": {"text": metin, "sig": imzala(metin)}}
+
+@router.get("/api/kiosk-durum", dependencies=[Depends(localhost_only)])
+def kiosk_durum(db: Session = Depends(get_db)):
+    bas, bit = get_service_hours(db)
+    simdi = datetime.now().time()
+    return {"acik": bas <= simdi <= bit,
+            "saatler": f"{bas:%H:%M} - {bit:%H:%M}"}
 
 @router.get("/api/tts", dependencies=[Depends(localhost_only)])
 def tts_endpoint(text: str, sig: str):

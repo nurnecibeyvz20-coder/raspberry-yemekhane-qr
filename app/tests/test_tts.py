@@ -21,6 +21,21 @@ def test_anons_sabitler():
     assert anons_metni(R("gecersiz")) == "Geçersiz QR kodu."
     assert anons_metni(R("hesap_pasif")) == "Hesabınız pasif durumda."
 
+def test_saat_okunusu():
+    from datetime import time as t
+    from app.tts import saat_okunusu
+    assert saat_okunusu(t(12, 0)) == "on iki"
+    assert saat_okunusu(t(13, 30)) == "on üç otuz"
+    assert saat_okunusu(t(9, 15)) == "dokuz on beş"
+    assert saat_okunusu(t(0, 5)) == "sıfır beş"
+
+def test_anons_saat_disi():
+    from datetime import time as t
+    r = R("saat_disi")
+    assert anons_metni(r) == "Yemekhane şu an kapalı."
+    assert anons_metni(r, saatler=(t(12, 0), t(13, 30))) == \
+        "Yemekhane şu an kapalı. Servis saatleri on iki, on üç otuz arasıdır."
+
 def test_imza_dogrulama():
     s = imzala("merhaba")
     assert dogrula("merhaba", s)

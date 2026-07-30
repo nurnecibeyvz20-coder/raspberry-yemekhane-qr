@@ -3,6 +3,7 @@ import hmac
 import os
 import threading
 import wave
+from datetime import time
 from pathlib import Path
 
 from itsdangerous import Signer
@@ -39,7 +40,29 @@ def preload_voice() -> None:
         pass  # model yoksa (test ortamı) sessizce geç; uret hata verir
 
 
-def anons_metni(result: CheckinResult) -> str:
+_BIRLER = ["", "bir", "iki", "üç", "dört", "beş", "altı", "yedi", "sekiz", "dokuz"]
+_ONLAR = ["", "on", "yirmi", "otuz", "kırk", "elli"]
+
+
+def _sayi_okunusu(n: int) -> str:
+    return " ".join(p for p in (_ONLAR[n // 10], _BIRLER[n % 10]) if p)
+
+
+def saat_okunusu(t: time) -> str:
+    saat = _sayi_okunusu(t.hour) if t.hour else "sıfır"
+    if t.minute == 0:
+        return saat
+    return f"{saat} {_sayi_okunusu(t.minute)}"
+
+
+def anons_metni(result: CheckinResult,
+                saatler: "tuple[time, time] | None" = None) -> str:
+    if result.status == "saat_disi":
+        if saatler is None:
+            return "Yemekhane şu an kapalı."
+        bas, bit = saatler
+        return (f"Yemekhane şu an kapalı. Servis saatleri "
+                f"{saat_okunusu(bas)}, {saat_okunusu(bit)} arasıdır.")
     if result.status == "onay":
         return (f"Afiyet olsun {result.ad_soyad}. "
                 f"Kalan bakiyeniz {int(result.balance)} lira.")

@@ -44,6 +44,29 @@ def test_checkin_response_includes_signed_announcement(client, seeded_db):
     assert "Afiyet olsun" in body["anons"]["text"]
     assert dogrula(body["anons"]["text"], body["anons"]["sig"])
 
+def test_checkin_outside_hours_response(client, seeded_db, monkeypatch):
+    from datetime import time as t
+    monkeypatch.setattr(
+        "app.services.checkin.get_service_hours",
+        lambda db: (t(0, 0), t(0, 1)))   # hep kapali
+    from app.qr_token import generate_token
+    r = client.post("/api/checkin", json={"token": generate_token(seeded_db)})
+    body = r.json()
+    assert body["status"] == "saat_disi"
+    assert body["saatler"] == "00:00 - 00:01"
+    assert "kapalı" in body["anons"]["text"]
+
+def test_kiosk_durum_endpoint(client, seeded_db, monkeypatch):
+    from datetime import time as t
+    monkeypatch.setattr(
+        "app.routers.kiosk_routes.get_service_hours",
+        lambda db: (t(0, 0), t(23, 59)))
+    r = client.get("/api/kiosk-durum")
+    assert r.json()["acik"] is True
+
+def test_kiosk_durum_remote_403(client_remote, seeded_db):
+    assert client_remote.get("/api/kiosk-durum").status_code == 403
+
 def test_tts_rejects_bad_signature(client, seeded_db):
     r = client.get("/api/tts", params={"text": "istedigim metni okut", "sig": "sahte"})
     assert r.status_code == 400
