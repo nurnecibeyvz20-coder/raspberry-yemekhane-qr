@@ -274,3 +274,17 @@ a { color: var(--k-birincil-acik); }
   .stat-kartlar { grid-template-columns: repeat(2, 1fr); }
   .panel-cift { grid-template-columns: 1fr; }
 }
+
+/* ---- Tablet: yan menu ikonlara daralir ---- */
+@media (max-width: 900px) {
+  .admin-yerlesim { grid-template-columns: 64px 1fr; }
+  .yan-menu { padding: var(--k-a2) var(--k-a1); }
+  .yan-menu-etiket { display: none; }
+  .yan-menu-marka {
+    justify-content: center; padding: 0 0 var(--k-a2);
+    margin-bottom: var(--k-a2);
+  }
+  .yan-menu-marka img { height: 32px; width: 32px; }
+  .yan-menu-marka > div { display: none; }
+  .yan-menu a { justify-content: center; padding: 10px var(--k-a1); }
+}

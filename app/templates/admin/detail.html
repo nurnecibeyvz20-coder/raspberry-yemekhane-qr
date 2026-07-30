@@ -5,7 +5,7 @@
 <div class="kart">
   <div style="display:flex; justify-content:space-between; align-items:flex-start; gap: var(--k-a3); flex-wrap: wrap;">
     <div>
-      <h1 class="baslik">{{ user.ad_soyad }}</h1>
+      <div class="baslik" style="font-size:18px; font-weight:600;">{{ user.ad_soyad }}</div>
       <div class="soluk">Sicil No: {{ user.sicil_no }}</div>
       <div class="ust-bosluk">
         <span class="rozet {{ '' if user.role == 'admin' else 'rozet-gri' }}">{{ user.role }}</span>
