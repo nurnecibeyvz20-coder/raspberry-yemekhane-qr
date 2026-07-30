@@ -3,11 +3,24 @@
 {% block content %}
 <style>
   body { overflow: hidden; cursor: none; }
-  .screen { position: fixed; inset: 0; display: none;
+  .screen { position: fixed; inset: 0; display: flex;
     flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; padding: 24px; color: var(--k-beyaz); }
-  .screen.active { display: flex; }
+    text-align: center; padding: 24px; color: var(--k-beyaz);
+    transition: opacity .25s ease; opacity: 0; pointer-events: none; }
+  .screen.active { opacity: 1; pointer-events: auto; }
+  #idle { z-index: 1; }
+  #result, #connecting { z-index: 2; }
   #idle { background: linear-gradient(180deg, var(--k-birincil), var(--k-birincil-koyu)); }
+  #idle .logo-yuvarlak { animation: nefes 4s ease-in-out infinite; }
+  @keyframes nefes { 0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); } }
+  #result.active #result-icon { animation: ikon-pop .35s ease-out; }
+  @keyframes ikon-pop { from { transform: scale(.4); opacity: 0; }
+    60% { transform: scale(1.15); } to { transform: scale(1); opacity: 1; } }
+  #result.active::after { content: ""; position: absolute; bottom: 0; left: 0;
+    height: 4px; background: var(--k-beyaz); opacity: .8;
+    animation: sayac 5s linear forwards; }
+  @keyframes sayac { from { width: 0; } to { width: 100%; } }
   #idle .logo-yuvarlak {
     width: 200px; height: 200px; border-radius: 50%;
     background: var(--k-beyaz); display: flex; align-items: center;
