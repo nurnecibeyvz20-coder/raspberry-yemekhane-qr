@@ -1,9 +1,10 @@
 import hashlib
+import hmac
 import os
 import subprocess
 from pathlib import Path
 
-from itsdangerous import BadSignature, Signer
+from itsdangerous import Signer
 
 from app.config import settings
 from app.services.checkin import CheckinResult
@@ -36,11 +37,7 @@ def imzala(text: str) -> str:
 
 
 def dogrula(text: str, sig: str) -> bool:
-    try:
-        _signer.unsign(f"{text}.{sig}".encode())
-        return True
-    except (BadSignature, UnicodeError):
-        return False
+    return hmac.compare_digest(imzala(text), sig)
 
 
 def uret(text: str) -> Path:
@@ -48,7 +45,13 @@ def uret(text: str) -> Path:
     path = CACHE_DIR / (hashlib.sha256(text.encode()).hexdigest() + ".wav")
     if path.exists():
         return path
-    subprocess.run(
-        ["piper", "--model", MODEL_PATH, "--output_file", str(path)],
-        input=text.encode(), check=True, timeout=15)
+    tmp = path.with_suffix(".tmp")
+    try:
+        subprocess.run(
+            ["piper", "--model", MODEL_PATH, "--output_file", str(tmp)],
+            input=text.encode(), check=True, timeout=15)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
+    os.replace(tmp, path)
     return path
