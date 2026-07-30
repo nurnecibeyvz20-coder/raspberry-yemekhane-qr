@@ -1,35 +1,45 @@
 {% extends "base.html" %}
 {% block title %}Personel Listesi{% endblock %}
-{% block content %}
+{% block topbar %}
+{% set aktif_sayfa = 'personel' %}
 {% include "admin/_nav.html" %}
-<h1>Personel Listesi</h1>
-<form method="get" action="/admin">
-    <input type="text" name="q" value="{{ q }}" placeholder="Sicil no veya ad soyad">
-    <button type="submit">Ara</button>
-</form>
-<p><a href="/admin/users/new">Yeni Personel Ekle</a></p>
-<table>
-    <thead>
+{% endblock %}
+{% block content %}
+<div class="icerik">
+  <div style="display:flex; align-items:center; gap: var(--k-a2); margin-bottom: var(--k-a3); flex-wrap: wrap;">
+    <form method="get" action="/admin" style="display:flex; gap: var(--k-a2); flex: 1;">
+      <input class="alan" type="text" name="q" value="{{ q }}" placeholder="Sicil no veya ad soyad" style="max-width: 320px;">
+      <button class="btn btn-ikincil" type="submit">Ara</button>
+    </form>
+    <a class="btn" href="/admin/users/new">Yeni Personel</a>
+  </div>
+  <div class="kart">
+    <table class="tablo">
+      <thead>
         <tr>
-            <th>Sicil No</th>
-            <th>Ad Soyad</th>
-            <th>Rol</th>
-            <th>Bakiye</th>
-            <th>Durum</th>
+          <th>Sicil No</th>
+          <th>Ad Soyad</th>
+          <th>Rol</th>
+          <th class="sag">Bakiye</th>
+          <th>Durum</th>
+          <th>İşlem</th>
         </tr>
-    </thead>
-    <tbody>
+      </thead>
+      <tbody>
         {% for u in users %}
-        <tr>
-            <td>{{ u.sicil_no }}</td>
-            <td><a href="/admin/users/{{ u.id }}">{{ u.ad_soyad }}</a></td>
-            <td>{{ u.role }}</td>
-            <td>{{ u.balance }} TL</td>
-            <td>{{ "Aktif" if u.is_active else "Pasif" }}</td>
+        <tr class="{{ '' if u.is_active else 'satir-pasif' }}">
+          <td>{{ u.sicil_no }}</td>
+          <td>{{ u.ad_soyad }}</td>
+          <td><span class="rozet {{ '' if u.role == 'admin' else 'rozet-gri' }}">{{ u.role }}</span></td>
+          <td class="sag">{{ u.balance }} TL</td>
+          <td><span class="rozet {{ '' if u.is_active else 'rozet-gri' }}">{{ "Aktif" if u.is_active else "Pasif" }}</span></td>
+          <td><a href="/admin/users/{{ u.id }}">Detay</a></td>
         </tr>
         {% else %}
-        <tr><td colspan="5">Kayıt bulunamadı</td></tr>
+        <tr><td colspan="6" class="soluk">Kayıt bulunamadı</td></tr>
         {% endfor %}
-    </tbody>
-</table>
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

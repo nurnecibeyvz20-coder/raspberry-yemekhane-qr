@@ -1,7 +1,15 @@
-<nav class="admin-nav">
-    <a href="/admin">Personel</a>
-    <a href="/admin/settings">Ayarlar</a>
-    <form method="post" action="/logout" style="display:inline">
-        <button type="submit">Çıkış</button>
+<div class="topbar">
+  <div class="topbar-marka">
+    <img src="/static/logo.jpg" alt="Karatay Belediyesi">
+    <div><div class="ad">Karatay Belediyesi</div><div class="alt">Yemekhane Yönetimi</div></div>
+  </div>
+  <nav class="topbar-nav">
+    <a href="/admin" class="{{ 'aktif' if aktif_sayfa == 'personel' else '' }}">Personel</a>
+    <a href="/admin/settings" class="{{ 'aktif' if aktif_sayfa == 'ayarlar' else '' }}">Ayarlar</a>
+  </nav>
+  <div class="topbar-sag">
+    <form method="post" action="/logout" style="margin:0">
+      <button class="btn btn-ikincil" type="submit">Çıkış</button>
     </form>
-</nav>
+  </div>
+</div>

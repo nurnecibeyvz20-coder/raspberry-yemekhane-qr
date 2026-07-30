@@ -1,91 +1,109 @@
 {% extends "base.html" %}
 {% block title %}{{ user.ad_soyad }}{% endblock %}
-{% block content %}
+{% block topbar %}
+{% set aktif_sayfa = 'personel' %}
 {% include "admin/_nav.html" %}
-<h1>{{ user.ad_soyad }}</h1>
-<p>
-    Sicil No: {{ user.sicil_no }}<br>
-    Rol: {{ user.role }}<br>
-    Bakiye: {{ user.balance }} TL<br>
-    Durum: {{ "Aktif" if user.is_active else "Pasif" }}
-</p>
+{% endblock %}
+{% block content %}
+<div class="icerik">
+  <div class="kart">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap: var(--k-a3); flex-wrap: wrap;">
+      <div>
+        <h1 class="baslik">{{ user.ad_soyad }}</h1>
+        <div class="soluk">Sicil No: {{ user.sicil_no }}</div>
+        <div class="ust-bosluk">
+          <span class="rozet {{ '' if user.role == 'admin' else 'rozet-gri' }}">{{ user.role }}</span>
+          <span class="rozet {{ '' if user.is_active else 'rozet-gri' }}">{{ "Aktif" if user.is_active else "Pasif" }}</span>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size: 32px; font-weight: 700; color: var(--k-birincil);">{{ user.balance }} TL</div>
+        <div class="soluk">Bakiye</div>
+      </div>
+    </div>
 
-<h2>Bakiye Yükle</h2>
-<form method="post" action="/admin/users/{{ user.id }}/load-balance">
-    <label>Tutar (negatif = düzeltme)
-        <input type="text" name="amount" required>
-    </label>
-    <button type="submit">Yükle</button>
-</form>
+    <div class="ust-bosluk" style="display:flex; gap: var(--k-a3); flex-wrap: wrap; align-items:flex-end;">
+      <form method="post" action="/admin/users/{{ user.id }}/load-balance">
+        <label class="alan-etiket" for="amount">Tutar (negatif = düzeltme)</label>
+        <div style="display:flex; gap: var(--k-a2);">
+          <input class="alan" id="amount" type="text" name="amount" required style="max-width: 160px;">
+          <button class="btn" type="submit">Yükle</button>
+        </div>
+      </form>
+      <form method="post" action="/admin/users/{{ user.id }}/password">
+        <label class="alan-etiket" for="new_password">Yeni Şifre</label>
+        <div style="display:flex; gap: var(--k-a2);">
+          <input class="alan" id="new_password" type="password" name="new_password" required style="max-width: 160px;">
+          <button class="btn btn-ikincil" type="submit">Değiştir</button>
+        </div>
+      </form>
+      <form method="post" action="/admin/users/{{ user.id }}/toggle-active">
+        <button class="btn {{ 'btn-tehlike' if user.is_active else 'btn-ikincil' }}" type="submit">
+          {{ "Pasifleştir" if user.is_active else "Aktifleştir" }}
+        </button>
+      </form>
+    </div>
 
-<h2>Bilgileri Düzenle</h2>
-<form method="post" action="/admin/users/{{ user.id }}/edit">
-    <label>Ad Soyad
-        <input type="text" name="ad_soyad" value="{{ user.ad_soyad }}" required>
-    </label>
-    <label>Rol
-        <select name="role">
-            <option value="personel" {{ "selected" if user.role == "personel" else "" }}>Personel</option>
-            <option value="admin" {{ "selected" if user.role == "admin" else "" }}>Admin</option>
+    <form class="ust-bosluk" method="post" action="/admin/users/{{ user.id }}/edit" style="display:flex; gap: var(--k-a2); flex-wrap: wrap; align-items:flex-end;">
+      <div>
+        <label class="alan-etiket" for="edit_ad_soyad">Ad Soyad</label>
+        <input class="alan" id="edit_ad_soyad" type="text" name="ad_soyad" value="{{ user.ad_soyad }}" required>
+      </div>
+      <div>
+        <label class="alan-etiket" for="edit_role">Rol</label>
+        <select class="alan" id="edit_role" name="role">
+          <option value="personel" {{ "selected" if user.role == "personel" else "" }}>Personel</option>
+          <option value="admin" {{ "selected" if user.role == "admin" else "" }}>Admin</option>
         </select>
-    </label>
-    <button type="submit">Kaydet</button>
-</form>
+      </div>
+      <button class="btn" type="submit">Kaydet</button>
+    </form>
+  </div>
 
-<h2>Şifre Değiştir</h2>
-<form method="post" action="/admin/users/{{ user.id }}/password">
-    <label>Yeni Şifre
-        <input type="password" name="new_password" required>
-    </label>
-    <button type="submit">Değiştir</button>
-</form>
-
-<h2>Hesap Durumu</h2>
-<form method="post" action="/admin/users/{{ user.id }}/toggle-active">
-    <button type="submit">
-        {{ "Pasifleştir" if user.is_active else "Aktifleştir" }}
-    </button>
-</form>
-
-<h2>Son İşlemler</h2>
-<table>
-    <thead>
+  <div class="kart ust-bosluk">
+    <h2 class="baslik">İşlem Geçmişi</h2>
+    <table class="tablo">
+      <thead>
         <tr>
-            <th>Tarih</th>
-            <th>Tür</th>
-            <th>Tutar</th>
-            <th>Bakiye</th>
+          <th>Tarih</th>
+          <th>Tür</th>
+          <th class="sag">Tutar</th>
+          <th class="sag">Bakiye</th>
         </tr>
-    </thead>
-    <tbody>
+      </thead>
+      <tbody>
         {% for t in transactions %}
         <tr>
-            <td>{{ t.created_at }}</td>
-            <td>{{ t.type }}</td>
-            <td>{{ t.amount }} TL</td>
-            <td>{{ t.balance_after }} TL</td>
+          <td>{{ t.created_at }}</td>
+          <td>{{ t.type }}</td>
+          <td class="sag {{ 'tutar-eksi' if t.amount < 0 else 'tutar-arti' }}">{{ "+" if t.amount > 0 else "" }}{{ t.amount }} TL</td>
+          <td class="sag">{{ t.balance_after }} TL</td>
         </tr>
         {% else %}
-        <tr><td colspan="4">İşlem yok</td></tr>
+        <tr><td colspan="4" class="soluk">İşlem yok</td></tr>
         {% endfor %}
-    </tbody>
-</table>
+      </tbody>
+    </table>
+  </div>
 
-<h2>Son Yemek Girişleri</h2>
-<table>
-    <thead>
+  <div class="kart ust-bosluk">
+    <h2 class="baslik">Yemek Girişleri</h2>
+    <table class="tablo">
+      <thead>
         <tr>
-            <th>Tarih</th>
+          <th>Tarih</th>
         </tr>
-    </thead>
-    <tbody>
+      </thead>
+      <tbody>
         {% for m in meal_entries %}
         <tr>
-            <td>{{ m.entry_date }}</td>
+          <td>{{ m.entry_date }}</td>
         </tr>
         {% else %}
-        <tr><td>Giriş yok</td></tr>
+        <tr><td class="soluk">Giriş yok</td></tr>
         {% endfor %}
-    </tbody>
-</table>
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}
