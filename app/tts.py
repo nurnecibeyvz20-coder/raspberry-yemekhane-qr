@@ -1,7 +1,8 @@
 import hashlib
 import hmac
 import os
-import subprocess
+import threading
+import wave
 from pathlib import Path
 
 from itsdangerous import Signer
@@ -13,6 +14,29 @@ CACHE_DIR = Path("/tmp/tts-cache")
 MODEL_PATH = os.environ.get("PIPER_MODEL", "/opt/piper/tr_TR-dfki-medium.onnx")
 
 _signer = Signer(settings.secret_key, salt="tts")
+
+# Model bir kez yüklenir ve bellekte tutulur (yükleme RPi'de ~12 sn;
+# subprocess her çağrıda yeniden yüklüyordu -> 20 sn'lik anons gecikmesi).
+_voice = None
+_voice_lock = threading.Lock()
+
+
+def _get_voice():
+    global _voice
+    if _voice is None:
+        with _voice_lock:
+            if _voice is None:
+                from piper import PiperVoice
+                _voice = PiperVoice.load(MODEL_PATH)
+    return _voice
+
+
+def preload_voice() -> None:
+    """Uygulama açılışında arka planda çağrılır; ilk anons gecikmesin."""
+    try:
+        _get_voice()
+    except Exception:
+        pass  # model yoksa (test ortamı) sessizce geç; uret hata verir
 
 
 def anons_metni(result: CheckinResult) -> str:
@@ -47,11 +71,10 @@ def uret(text: str) -> Path:
         return path
     tmp = path.with_suffix(".tmp")
     try:
-        # piper 1.6: CLI `python -m piper`; -m model, -f cikti dosyasi,
-        # metin stdin'den okunur
-        subprocess.run(
-            ["python", "-m", "piper", "-m", MODEL_PATH, "-f", str(tmp)],
-            input=text.encode(), check=True, timeout=30)
+        voice = _get_voice()
+        with _voice_lock:  # onnx oturumu tek is parcaciginda kullanilsin
+            with wave.open(str(tmp), "wb") as wf:
+                voice.synthesize_wav(text, wf)
     except BaseException:
         tmp.unlink(missing_ok=True)
         raise

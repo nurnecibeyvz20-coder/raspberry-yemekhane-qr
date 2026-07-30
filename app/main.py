@@ -1,3 +1,4 @@
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from sqlalchemy.exc import OperationalError
 from app.db import SessionLocal
 from app.routers import admin_routes, auth_routes, kiosk_routes, qr_routes
 from app.startup import ensure_initial_admin
+from app.tts import preload_voice
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,6 +21,8 @@ async def lifespan(app: FastAPI):
             db.close()
     except OperationalError:
         pass
+    # TTS modelini arka planda yukle (ilk anons ~12 sn gecikmesin)
+    threading.Thread(target=preload_voice, daemon=True).start()
     yield
 
 app = FastAPI(title="Yemekhane QR", lifespan=lifespan)

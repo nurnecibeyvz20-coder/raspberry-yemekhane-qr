@@ -36,41 +36,37 @@ def test_imza_nokta_kaydirma_reddedilir():
     s = imzala("A.B")
     assert not dogrula("A", "B." + s)
 
+class FakeVoice:
+    """PiperVoice yerine: synthesize_wav cagrilarini sayar."""
+    def __init__(self, fail=False):
+        self.calls = 0
+        self.fail = fail
+
+    def synthesize_wav(self, text, wf):
+        self.calls += 1
+        if self.fail:
+            # kismi cikti yazip patla (wave header'i yazilmis olur)
+            raise RuntimeError("sentez hatasi")
+        wf.setnchannels(1); wf.setsampwidth(2); wf.setframerate(22050)
+        wf.writeframes(b"\x00\x00" * 100)
+
 def test_uret_cache(tmp_path, monkeypatch):
     monkeypatch.setattr("app.tts.CACHE_DIR", tmp_path)
-    calls = []
-    def fake_run(cmd, **kw):
-        calls.append(cmd)
-        # piper cikti dosyasini yazmis gibi yap
-        from pathlib import Path
-        Path(cmd[cmd.index("-f") + 1]).write_bytes(b"RIFF")
-        class P: returncode = 0
-        return P()
-    monkeypatch.setattr("app.tts.subprocess.run", fake_run)
+    fake = FakeVoice()
+    monkeypatch.setattr("app.tts._get_voice", lambda: fake)
     p1 = uret("test metni")
     p2 = uret("test metni")
     assert p1 == p2 and p1.exists()
-    assert len(calls) == 1  # ikinci cagri cache'ten
+    assert fake.calls == 1  # ikinci cagri cache'ten
 
 def test_uret_hata_cache_zehirlemez(tmp_path, monkeypatch):
-    import subprocess as sp
     monkeypatch.setattr("app.tts.CACHE_DIR", tmp_path)
-    def failing_run(cmd, **kw):
-        # piper kismi cikti yazip patlar
-        from pathlib import Path
-        Path(cmd[cmd.index("-f") + 1]).write_bytes(b"RI")
-        raise sp.CalledProcessError(1, cmd)
-    monkeypatch.setattr("app.tts.subprocess.run", failing_run)
+    monkeypatch.setattr("app.tts._get_voice", lambda: FakeVoice(fail=True))
     import pytest as pt
-    with pt.raises(sp.CalledProcessError):
+    with pt.raises(Exception):
         uret("hatali metin")
     assert list(tmp_path.iterdir()) == []  # ne .wav ne .tmp kalmali
     # retry basarili fake ile calisir
-    def ok_run(cmd, **kw):
-        from pathlib import Path
-        Path(cmd[cmd.index("-f") + 1]).write_bytes(b"RIFF")
-        class P: returncode = 0
-        return P()
-    monkeypatch.setattr("app.tts.subprocess.run", ok_run)
+    monkeypatch.setattr("app.tts._get_voice", lambda: FakeVoice())
     p = uret("hatali metin")
     assert p.exists() and p.suffix == ".wav"
