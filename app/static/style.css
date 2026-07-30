@@ -1,70 +1,149 @@
-/* Yemekhane QR — base styles (mobile-first) */
+/* ==== Karatay Belediyesi Design System ==== */
+/* Tek dogruluk kaynagi: tum renkler bu token'lardan gelir. Ham hex yasak. */
+:root {
+  --k-birincil:       #205c42;
+  --k-birincil-koyu:  #17452f;
+  --k-birincil-acik:  #2e7a58;
+  --k-yesil-100:      #e8f2ed;
+  --k-yesil-50:       #f4f9f6;
+  --k-basari:  #2e7a58;
+  --k-uyari:   #d97706;
+  --k-hata:    #b91c1c;
+  --k-uyari-zemin: #fef3cd;
+  --k-hata-zemin:  #fde8e8;
+  --k-metin:        #1a2e24;
+  --k-metin-soluk:  #5f7268;
+  --k-cizgi:        #d5e3db;
+  --k-beyaz:        #ffffff;
+  --k-radius:    12px;
+  --k-radius-sm: 8px;
+  --k-golge:     0 2px 8px rgba(32, 92, 66, .10);
+  --k-golge-buyuk: 0 8px 24px rgba(32, 92, 66, .14);
+  --k-a1: 8px; --k-a2: 16px; --k-a3: 24px; --k-a4: 32px; --k-a6: 48px;
+  --k-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
 * { box-sizing: border-box; }
-
 body {
-    margin: 0;
-    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    background: #f4f6f8;
-    color: #2c3e50;
+  margin: 0; font-family: var(--k-font);
+  background: var(--k-yesil-50); color: var(--k-metin);
+}
+a { color: var(--k-birincil-acik); }
+
+/* ---- Topbar ---- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--k-beyaz); border-bottom: 1px solid var(--k-cizgi);
+  box-shadow: var(--k-golge); padding: var(--k-a1) var(--k-a3);
+}
+.topbar-marka { display: flex; align-items: center; gap: var(--k-a2); }
+.topbar-marka img { height: 32px; width: auto; }
+.topbar-marka .ad { font-weight: 600; color: var(--k-birincil); }
+.topbar-marka .alt { font-size: 12px; color: var(--k-metin-soluk); }
+.topbar-nav { display: flex; gap: var(--k-a2); }
+.topbar-nav a {
+  text-decoration: none; color: var(--k-metin-soluk);
+  padding: var(--k-a1) var(--k-a2); border-bottom: 2px solid transparent;
+}
+.topbar-nav a.aktif, .topbar-nav a:hover {
+  color: var(--k-birincil); border-bottom-color: var(--k-birincil);
+}
+.topbar-sag { display: flex; align-items: center; gap: var(--k-a2); }
+.topbar-sag .kullanici { color: var(--k-metin-soluk); font-size: 14px; }
+
+/* ---- Duzen ---- */
+.icerik { max-width: 960px; margin: var(--k-a3) auto; padding: 0 var(--k-a2); }
+.sayfa-orta {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: var(--k-a2);
 }
 
-main {
-    max-width: 420px;
-    margin: 0 auto;
-    padding: 16px;
-    text-align: center;
+/* ---- Kart ---- */
+.kart {
+  background: var(--k-beyaz); border-radius: var(--k-radius);
+  box-shadow: var(--k-golge); padding: var(--k-a3);
 }
 
-h1 { font-size: 1.4rem; margin: 12px 0; }
-
-form { display: flex; flex-direction: column; gap: 8px; }
-label { text-align: left; font-size: 0.9rem; }
-input {
-    padding: 12px;
-    font-size: 1rem;
-    border: 1px solid #ccd4db;
-    border-radius: 6px;
+/* ---- Butonlar ---- */
+.btn {
+  display: inline-block; background: var(--k-birincil); color: var(--k-beyaz);
+  border: none; border-radius: var(--k-radius-sm);
+  padding: 10px var(--k-a3); font-size: 15px; font-family: var(--k-font);
+  cursor: pointer; text-decoration: none;
+  transition: background .15s, transform .15s, box-shadow .15s;
 }
-button {
-    padding: 12px;
-    font-size: 1rem;
-    border: 0;
-    border-radius: 6px;
-    background: #2980b9;
-    color: #fff;
-    cursor: pointer;
+.btn:hover {
+  background: var(--k-birincil-koyu); transform: translateY(-1px);
+  box-shadow: var(--k-golge);
 }
-
-.error { color: #c0392b; font-weight: bold; }
-
-/* QR page */
-#qrcode {
-    display: flex;
-    justify-content: center;
-    margin: 16px auto;
-    min-height: 280px;
+.btn-ikincil {
+  background: var(--k-beyaz); color: var(--k-birincil);
+  border: 1px solid var(--k-birincil);
 }
+.btn-ikincil:hover { background: var(--k-yesil-100); }
+.btn-tehlike { background: var(--k-hata); }
+.btn-tehlike:hover { background: var(--k-hata); opacity: .85; }
+.btn-blok { display: block; width: 100%; text-align: center; }
 
-.balance-line { font-size: 1.6rem; font-weight: bold; margin: 8px 0; }
-.countdown-line { font-size: 0.95rem; color: #7f8c8d; }
-
-.low-band {
-    background: #c0392b;
-    color: #fff;
-    padding: 12px;
-    text-align: center;
-    border-radius: 6px;
-    font-weight: bold;
-    margin: 8px 0;
+/* ---- Form alanlari ---- */
+.alan {
+  width: 100%; padding: 10px var(--k-a2);
+  border: 1px solid var(--k-cizgi); border-radius: var(--k-radius);
+  font-size: 15px; font-family: var(--k-font); background: var(--k-beyaz);
+  color: var(--k-metin);
+}
+.alan:focus {
+  outline: none; border-color: var(--k-birincil);
+  box-shadow: 0 0 0 3px var(--k-yesil-100);
+}
+.alan-etiket {
+  display: block; font-size: 13px; color: var(--k-metin-soluk);
+  margin: var(--k-a2) 0 4px;
 }
 
-.qr-actions {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 16px;
-    margin-top: 20px;
+/* ---- Tablo ---- */
+.tablo { width: 100%; border-collapse: collapse; }
+.tablo th {
+  background: var(--k-yesil-100); color: var(--k-birincil);
+  text-align: left; padding: var(--k-a1) var(--k-a2); font-size: 14px;
 }
-.qr-actions a { color: #2980b9; }
-.qr-actions form { display: inline; }
-.qr-actions button { background: #7f8c8d; padding: 8px 16px; }
+.tablo td {
+  padding: var(--k-a1) var(--k-a2);
+  border-bottom: 1px solid var(--k-cizgi); font-size: 14px;
+}
+.tablo tr:hover td { background: var(--k-yesil-50); }
+.tablo .sag { text-align: right; }
+.tutar-arti { color: var(--k-basari); font-weight: 600; }
+.tutar-eksi { color: var(--k-hata); font-weight: 600; }
+.satir-pasif td { opacity: .5; }
+
+/* ---- Bantlar ---- */
+.bant-hata, .bant-uyari, .bant-basari {
+  border-radius: var(--k-radius-sm); padding: var(--k-a2);
+  margin: var(--k-a2) 0; font-size: 14px;
+}
+.bant-hata {
+  background: var(--k-hata-zemin); color: var(--k-hata);
+  border-left: 4px solid var(--k-hata);
+}
+.bant-uyari {
+  background: var(--k-uyari-zemin); color: var(--k-uyari);
+  border-left: 4px solid var(--k-uyari);
+}
+.bant-basari {
+  background: var(--k-yesil-100); color: var(--k-birincil);
+  border-left: 4px solid var(--k-basari);
+}
+
+/* ---- Rozet ---- */
+.rozet {
+  display: inline-block; background: var(--k-yesil-100);
+  color: var(--k-birincil); border-radius: 999px;
+  padding: 2px 10px; font-size: 12px; font-weight: 600;
+}
+.rozet-gri { background: var(--k-cizgi); color: var(--k-metin-soluk); }
+
+/* ---- Yardimcilar ---- */
+.baslik { color: var(--k-birincil); margin: 0 0 var(--k-a2); }
+.soluk { color: var(--k-metin-soluk); }
+.ust-bosluk { margin-top: var(--k-a3); }
