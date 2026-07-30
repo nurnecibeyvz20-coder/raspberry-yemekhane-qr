@@ -1,17 +1,19 @@
 {% extends "base.html" %}
-{% block title %}Giriş — Yemekhane QR{% endblock %}
+{% block title %}Giriş — Karatay Belediyesi Yemekhane{% endblock %}
 {% block content %}
-<main class="login">
-    <h1>Yemekhane QR</h1>
-    {% if error %}
-    <p class="error">{{ error }}</p>
-    {% endif %}
-    <form method="post" action="/login">
-        <label for="sicil_no">Sicil No</label>
-        <input type="text" id="sicil_no" name="sicil_no" required autofocus>
-        <label for="password">Şifre</label>
-        <input type="password" id="password" name="password" required>
-        <button type="submit">Giriş Yap</button>
+<div class="sayfa-orta">
+  <div class="kart" style="width: 100%; max-width: 380px; text-align: center;">
+    <img src="/static/logo.jpg" alt="Karatay Belediyesi" style="height: 64px; margin-bottom: 8px;">
+    <h1 class="baslik" style="font-size: 20px;">Karatay Belediyesi</h1>
+    <p class="soluk" style="margin-top: -8px;">Yemekhane Sistemi</p>
+    {% if error %}<div class="bant-hata">{{ error }}</div>{% endif %}
+    <form method="post" action="/login" style="text-align: left;">
+      <label class="alan-etiket" for="sicil_no">Sicil No</label>
+      <input class="alan" type="text" id="sicil_no" name="sicil_no" required autofocus>
+      <label class="alan-etiket" for="password">Şifre</label>
+      <input class="alan" type="password" id="password" name="password" required>
+      <button class="btn btn-blok ust-bosluk" type="submit">Giriş Yap</button>
     </form>
-</main>
+  </div>
+</div>
 {% endblock %}
