@@ -2,11 +2,13 @@ import socket
 import struct
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.db import get_db
 from app.deps import templates
 from app.services.checkin import process_checkin
+from app.tts import anons_metni, dogrula, imzala, uret
 
 router = APIRouter()
 
@@ -54,6 +56,22 @@ def kiosk_page(request: Request):
 @router.post("/api/checkin", dependencies=[Depends(localhost_only)])
 def checkin(body: CheckinBody, db: Session = Depends(get_db)):
     r = process_checkin(db, body.token)
+    metin = anons_metni(r)
     return {"ok": r.ok, "status": r.status, "message": r.message,
             "ad_soyad": r.ad_soyad,
-            "balance": str(r.balance) if r.balance is not None else None}
+            "balance": str(r.balance) if r.balance is not None else None,
+            "anons": {"text": metin, "sig": imzala(metin)}}
+
+@router.get("/api/tts", dependencies=[Depends(localhost_only)])
+def tts_endpoint(text: str, sig: str):
+    try:
+        ok = dogrula(text, sig)
+    except TypeError:
+        ok = False
+    if not ok:
+        raise HTTPException(400, "Geçersiz imza")
+    try:
+        path = uret(text)
+    except Exception:
+        raise HTTPException(503, "Ses üretilemedi")
+    return FileResponse(path, media_type="audio/wav")
