@@ -47,9 +47,11 @@ def uret(text: str) -> Path:
         return path
     tmp = path.with_suffix(".tmp")
     try:
+        # piper 1.6: CLI `python -m piper`; -m model, -f cikti dosyasi,
+        # metin stdin'den okunur
         subprocess.run(
-            ["piper", "--model", MODEL_PATH, "--output_file", str(tmp)],
-            input=text.encode(), check=True, timeout=15)
+            ["python", "-m", "piper", "-m", MODEL_PATH, "-f", str(tmp)],
+            input=text.encode(), check=True, timeout=30)
     except BaseException:
         tmp.unlink(missing_ok=True)
         raise

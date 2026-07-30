@@ -43,7 +43,7 @@ def test_uret_cache(tmp_path, monkeypatch):
         calls.append(cmd)
         # piper cikti dosyasini yazmis gibi yap
         from pathlib import Path
-        Path(cmd[cmd.index("--output_file") + 1]).write_bytes(b"RIFF")
+        Path(cmd[cmd.index("-f") + 1]).write_bytes(b"RIFF")
         class P: returncode = 0
         return P()
     monkeypatch.setattr("app.tts.subprocess.run", fake_run)
@@ -58,7 +58,7 @@ def test_uret_hata_cache_zehirlemez(tmp_path, monkeypatch):
     def failing_run(cmd, **kw):
         # piper kismi cikti yazip patlar
         from pathlib import Path
-        Path(cmd[cmd.index("--output_file") + 1]).write_bytes(b"RI")
+        Path(cmd[cmd.index("-f") + 1]).write_bytes(b"RI")
         raise sp.CalledProcessError(1, cmd)
     monkeypatch.setattr("app.tts.subprocess.run", failing_run)
     import pytest as pt
@@ -68,7 +68,7 @@ def test_uret_hata_cache_zehirlemez(tmp_path, monkeypatch):
     # retry basarili fake ile calisir
     def ok_run(cmd, **kw):
         from pathlib import Path
-        Path(cmd[cmd.index("--output_file") + 1]).write_bytes(b"RIFF")
+        Path(cmd[cmd.index("-f") + 1]).write_bytes(b"RIFF")
         class P: returncode = 0
         return P()
     monkeypatch.setattr("app.tts.subprocess.run", ok_run)
