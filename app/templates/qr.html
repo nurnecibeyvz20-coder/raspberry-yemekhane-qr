@@ -1,22 +1,30 @@
 {% extends "base.html" %}
-{% block title %}QR Kodum — Yemekhane QR{% endblock %}
+{% block title %}QR Kodum{% endblock %}
+{% block topbar %}
+<div class="topbar">
+  <div class="topbar-marka">
+    <img src="/static/logo.jpg" alt="Karatay Belediyesi">
+    <div><div class="ad">Karatay Belediyesi</div><div class="alt">Yemekhane</div></div>
+  </div>
+  <div class="topbar-sag">
+    <span class="kullanici">{{ user.ad_soyad }}</span>
+    <form method="post" action="/logout" style="margin:0">
+      <button class="btn btn-ikincil" type="submit">Çıkış</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
 {% block content %}
-<main class="qr-page">
-    <h1>{{ user.ad_soyad }}</h1>
-    <div id="low-band" class="low-band"
-         style="display: {{ 'block' if low_balance else 'none' }};">
-        Bakiyeniz yetersiz
-    </div>
-    <div id="qrcode"></div>
-    <p class="balance-line">Bakiye: <span id="balance">{{ user.balance }} TL</span></p>
-    <p class="countdown-line">Yenilenmeye: <span id="countdown">45</span> sn</p>
-    <nav class="qr-actions">
-        <a href="/change-password">Şifre Değiştir</a>
-        <form method="post" action="/logout">
-            <button type="submit">Çıkış</button>
-        </form>
-    </nav>
-</main>
+<div class="icerik" style="max-width: 420px;">
+  <div id="low-band" class="bant-hata" style="display: {{ 'block' if low_balance else 'none' }}; text-align:center;">Bakiyeniz yetersiz</div>
+  <div class="kart" style="text-align: center;">
+    <div id="qrcode" style="display:inline-block; padding: 12px; border: 1px solid var(--k-cizgi); border-radius: var(--k-radius); background: var(--k-beyaz);"></div>
+    <div id="balance" style="font-size: 32px; font-weight: 700; color: var(--k-birincil); margin-top: 16px;">{{ user.balance }} TL</div>
+    <div class="soluk">Bakiyeniz</div>
+    <div id="countdown" class="soluk ust-bosluk" style="font-size: 14px;"></div>
+    <a class="soluk" href="/change-password" style="font-size: 13px; display:inline-block; margin-top: 16px;">Şifre değiştir</a>
+  </div>
+</div>
 <script src="/static/qrcode.min.js"></script>
 <script>
 let qr = null;
