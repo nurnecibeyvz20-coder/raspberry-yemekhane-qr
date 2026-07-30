@@ -1,3 +1,6 @@
+import socket
+import struct
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -7,10 +10,39 @@ from app.services.checkin import process_checkin
 
 router = APIRouter()
 
+_UNSET = object()
+_cached_gateway = _UNSET
+
+def _gateway_ip():
+    """Docker bridge default gateway IP'sini döndürür (Linux), yoksa None.
+
+    Host makineden docker-proxy üzerinden gelen bağlantılar bridge gateway
+    IP'siyle görünür; bu IP kiosk (host) makinesinin kendisidir.
+    """
+    global _cached_gateway
+    if _cached_gateway is _UNSET:
+        _cached_gateway = _read_default_gateway()
+    return _cached_gateway
+
+def _read_default_gateway():
+    try:
+        with open("/proc/net/route") as f:
+            for line in f.readlines()[1:]:
+                fields = line.split()
+                if len(fields) >= 3 and fields[1] == "00000000":
+                    return socket.inet_ntoa(struct.pack("<L", int(fields[2], 16)))
+    except (OSError, ValueError, struct.error):
+        pass
+    return None
+
 def localhost_only(request: Request):
     host = request.client.host if request.client else ""
-    if host not in ("127.0.0.1", "::1", "localhost"):
-        raise HTTPException(status_code=403, detail="Yalnız kiosk")
+    if host in ("127.0.0.1", "::1", "localhost"):
+        return
+    gateway = _gateway_ip()
+    if gateway is not None and host == gateway:
+        return
+    raise HTTPException(status_code=403, detail="Yalnız kiosk")
 
 class CheckinBody(BaseModel):
     token: str

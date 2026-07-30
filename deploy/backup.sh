@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -eo pipefail
 BACKUP_DIR=/home/pi/backups
 mkdir -p "$BACKUP_DIR"
 cd /home/pi/yemekhane

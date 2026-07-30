@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -21,7 +22,9 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title="Yemekhane QR", lifespan=lifespan)
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static",
+          StaticFiles(directory=str(Path(__file__).resolve().parent / "static")),
+          name="static")
 app.include_router(auth_routes.router)
 app.include_router(admin_routes.router)
 app.include_router(qr_routes.router)
