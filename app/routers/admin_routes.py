@@ -9,12 +9,17 @@ from sqlalchemy.orm import Session
 from app.auth import hash_password, require_admin
 from app.db import get_db
 from app.deps import templates
+from app.flash import get_flash, set_flash
 from app.models import MealEntry, Setting, Transaction, User
 from app.services.checkin import get_meal_price
+from app.services.stats import dashboard_stats, paginate
 
 router = APIRouter(dependencies=[Depends(require_admin)])
 
 ROLES = ("personel", "admin")
+
+SORT_COLS = {"sicil_no": User.sicil_no, "ad_soyad": User.ad_soyad,
+             "balance": User.balance}
 
 def _get_user_or_404(db: Session, user_id: int) -> User:
     user = db.get(User, user_id)
@@ -22,16 +27,63 @@ def _get_user_or_404(db: Session, user_id: int) -> User:
         raise HTTPException(404, "Kullanıcı bulunamadı")
     return user
 
+def _detail_or_list_redirect(user_id: int, next: str) -> RedirectResponse:
+    target = "/admin/personel" if next == "personel" \
+        else f"/admin/users/{user_id}"
+    return RedirectResponse(target, status_code=303)
+
+def _render_with_flash(request: Request, template: str, context: dict):
+    flash_data = get_flash(request)
+    context["flash"] = flash_data
+    resp = templates.TemplateResponse(request, template, context)
+    if flash_data:
+        resp.delete_cookie("flash")
+    return resp
+
 @router.get("/admin", response_class=HTMLResponse)
-def user_list(request: Request, q: str = "",
-              db: Session = Depends(get_db)):
+def dashboard(request: Request, db: Session = Depends(get_db)):
+    return _render_with_flash(
+        request, "admin/dashboard.html",
+        {"stats": dashboard_stats(db),
+         "meal_price": get_meal_price(db),
+         "aktif_sayfa": "genel"})
+
+@router.get("/admin/personel", response_class=HTMLResponse)
+def personel_list(request: Request, q: str = "", page: int = 1,
+                  sort: str = "ad_soyad", dir: str = "asc",
+                  db: Session = Depends(get_db)):
+    col = SORT_COLS.get(sort, User.ad_soyad)
+    if sort not in SORT_COLS:
+        sort = "ad_soyad"
+    if dir not in ("asc", "desc"):
+        dir = "asc"
     query = db.query(User)
     if q:
         query = query.filter(or_(User.sicil_no.ilike(f"%{q}%"),
                                  User.ad_soyad.ilike(f"%{q}%")))
-    users = query.order_by(User.ad_soyad).all()
-    return templates.TemplateResponse(
-        request, "admin/list.html", {"users": users, "q": q})
+    query = query.order_by(col.desc() if dir == "desc" else col.asc())
+    page_obj = paginate(query, page)
+    return _render_with_flash(
+        request, "admin/list.html",
+        {"page_obj": page_obj, "q": q, "sort": sort, "dir": dir,
+         "aktif_sayfa": "personel"})
+
+@router.get("/admin/islemler", response_class=HTMLResponse)
+def islemler_list(request: Request, page: int = 1, tur: str = "",
+                  db: Session = Depends(get_db)):
+    # Transaction modelinde `user` iliskisi yok; kullanici adini
+    # gostermek icin User ile join edip (Transaction, User) ciftleri
+    # olarak sablona geciyoruz.
+    query = (db.query(Transaction, User)
+               .join(User, Transaction.user_id == User.id))
+    if tur:
+        query = query.filter(Transaction.type == tur)
+    query = query.order_by(Transaction.created_at.desc(),
+                           Transaction.id.desc())
+    page_obj = paginate(query, page)
+    return _render_with_flash(
+        request, "admin/islemler.html",
+        {"page_obj": page_obj, "tur": tur, "aktif_sayfa": "islemler"})
 
 @router.get("/admin/users/new", response_class=HTMLResponse)
 def new_user_page(request: Request):
@@ -60,7 +112,9 @@ def create_user(request: Request,
              "form": {"sicil_no": sicil_no, "ad_soyad": ad_soyad,
                       "role": role}},
             status_code=200)
-    return RedirectResponse("/admin", status_code=303)
+    resp = RedirectResponse("/admin/personel", status_code=303)
+    set_flash(resp, "Personel eklendi")
+    return resp
 
 @router.get("/admin/users/{user_id}", response_class=HTMLResponse)
 def user_detail(request: Request, user_id: int,
@@ -76,7 +130,7 @@ def user_detail(request: Request, user_id: int,
                       .order_by(MealEntry.entry_date.desc(),
                                 MealEntry.id.desc())
                       .limit(50).all())
-    return templates.TemplateResponse(
+    return _render_with_flash(
         request, "admin/detail.html",
         {"user": user, "transactions": transactions,
          "meal_entries": meal_entries})
@@ -85,6 +139,7 @@ def user_detail(request: Request, user_id: int,
 def edit_user(user_id: int,
               ad_soyad: str = Form(...),
               role: str = Form(...),
+              next: str = Form(""),
               db: Session = Depends(get_db)):
     if role not in ROLES:
         raise HTTPException(400, "Geçersiz rol")
@@ -92,26 +147,37 @@ def edit_user(user_id: int,
     user.ad_soyad = ad_soyad.strip()
     user.role = role
     db.commit()
-    return RedirectResponse(f"/admin/users/{user_id}", status_code=303)
+    resp = _detail_or_list_redirect(user_id, next)
+    set_flash(resp, f"{user.ad_soyad} bilgileri güncellendi")
+    return resp
 
 @router.post("/admin/users/{user_id}/password")
 def set_password(user_id: int,
                  new_password: str = Form(...),
+                 next: str = Form(""),
                  db: Session = Depends(get_db)):
     user = _get_user_or_404(db, user_id)
     user.password_hash = hash_password(new_password)
     db.commit()
-    return RedirectResponse(f"/admin/users/{user_id}", status_code=303)
+    resp = _detail_or_list_redirect(user_id, next)
+    set_flash(resp, "Şifre sıfırlandı")
+    return resp
 
 @router.post("/admin/users/{user_id}/toggle-active")
-def toggle_active(user_id: int, db: Session = Depends(get_db)):
+def toggle_active(user_id: int, next: str = Form(""),
+                  db: Session = Depends(get_db)):
     user = _get_user_or_404(db, user_id)
     user.is_active = not user.is_active
     db.commit()
-    return RedirectResponse(f"/admin/users/{user_id}", status_code=303)
+    resp = _detail_or_list_redirect(user_id, next)
+    mesaj = (f"{user.ad_soyad} aktifleştirildi" if user.is_active
+             else f"{user.ad_soyad} pasife alındı")
+    set_flash(resp, mesaj)
+    return resp
 
 @router.post("/admin/users/{user_id}/load-balance")
 def load_balance(user_id: int, amount: str = Form(...),
+                 next: str = Form(""),
                  admin: User = Depends(require_admin),
                  db: Session = Depends(get_db)):
     try:
@@ -130,14 +196,23 @@ def load_balance(user_id: int, amount: str = Form(...),
         amount=amt, balance_after=new_balance, created_by=admin.id))
     user.balance = new_balance
     db.commit()
-    return RedirectResponse(f"/admin/users/{user_id}", status_code=303)
+    resp = _detail_or_list_redirect(user_id, next)
+    if amt > 0:
+        set_flash(resp, f"{user.ad_soyad} kişisine {amt} TL yüklendi")
+    else:
+        set_flash(resp, f"{user.ad_soyad} bakiyesi {amt} TL düzeltildi")
+    return resp
 
 @router.get("/admin/settings", response_class=HTMLResponse)
 def settings_page(request: Request, db: Session = Depends(get_db)):
-    return templates.TemplateResponse(
+    flash_data = get_flash(request)
+    resp = templates.TemplateResponse(
         request, "admin/settings.html",
         {"meal_price": get_meal_price(db), "error": None,
-         "saved": False})
+         "saved": False, "flash": flash_data})
+    if flash_data:
+        resp.delete_cookie("flash")
+    return resp
 
 @router.post("/admin/settings")
 def update_settings(request: Request,
@@ -160,6 +235,6 @@ def update_settings(request: Request,
     else:
         row.value = str(price)
     db.commit()
-    return templates.TemplateResponse(
-        request, "admin/settings.html",
-        {"meal_price": price, "error": None, "saved": True})
+    resp = RedirectResponse("/admin/settings", status_code=303)
+    set_flash(resp, "Yemek ücreti güncellendi")
+    return resp

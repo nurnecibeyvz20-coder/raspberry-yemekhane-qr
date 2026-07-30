@@ -29,6 +29,7 @@ def test_create_user(client, admin_db):
                           "password": "sifre123", "role": "personel"},
                     follow_redirects=False)
     assert r.status_code == 303
+    assert r.headers["location"] == "/admin/personel"
     u = admin_db.query(User).filter_by(sicil_no="3001").one()
     assert u.ad_soyad == "Yeni Kişi"
 
@@ -66,7 +67,9 @@ def test_toggle_active(client, admin_db):
 
 def test_update_meal_price(client, admin_db):
     login_admin(client, admin_db)
-    client.post("/admin/settings", data={"meal_price": "150.00"})
+    r = client.post("/admin/settings", data={"meal_price": "150.00"},
+                    follow_redirects=False)
+    assert r.status_code == 303
     assert admin_db.get(Setting, "meal_price").value == "150.00"
 
 def test_load_balance_rejects_nan(client, admin_db):
@@ -93,5 +96,58 @@ def test_search_users(client, admin_db):
     admin_db.add(User(sicil_no="4001", ad_soyad="Mehmet Öz",
                       role="personel", password_hash="x"))
     admin_db.commit()
-    r = client.get("/admin?q=Mehmet")
+    r = client.get("/admin/personel?q=Mehmet")
     assert "Mehmet Öz" in r.text
+
+def test_dashboard_renders_stats(client, admin_db):
+    login_admin(client, admin_db)
+    r = client.get("/admin")
+    assert r.status_code == 200
+    assert "Bugün Yiyen" in r.text
+
+def test_personel_pagination(client, admin_db):
+    login_admin(client, admin_db)
+    for i in range(60):
+        admin_db.add(User(sicil_no=f"pg{i:03d}", ad_soyad=f"Kisi {i:03d}",
+                          role="personel", password_hash="x"))
+    admin_db.commit()
+    r1 = client.get("/admin/personel?page=1")
+    r2 = client.get("/admin/personel?page=2")
+    assert "Kisi 000" in r1.text and "Kisi 000" not in r2.text
+
+def test_personel_sort_by_balance(client, admin_db):
+    login_admin(client, admin_db)
+    admin_db.add(User(sicil_no="z1", ad_soyad="Zengin", role="personel",
+                      password_hash="x", balance=Decimal("900.00")))
+    admin_db.add(User(sicil_no="f1", ad_soyad="Fakir", role="personel",
+                      password_hash="x", balance=Decimal("10.00")))
+    admin_db.commit()
+    r = client.get("/admin/personel?sort=balance&dir=desc")
+    assert r.text.index("Zengin") < r.text.index("Fakir")
+
+def test_islemler_page_filters_by_type(client, admin_db):
+    admin = login_admin(client, admin_db)
+    u = User(sicil_no="i1", ad_soyad="Islemci", role="personel",
+             password_hash="x")
+    admin_db.add(u); admin_db.commit()
+    admin_db.add(Transaction(user_id=u.id, type="yukleme",
+                             amount=Decimal("100.00"),
+                             balance_after=Decimal("100.00"),
+                             created_by=admin.id))
+    admin_db.add(Transaction(user_id=u.id, type="yemek",
+                             amount=Decimal("-125.00"),
+                             balance_after=Decimal("-25.00")))
+    admin_db.commit()
+    r = client.get("/admin/islemler?tur=yukleme")
+    assert "yukleme" in r.text.lower() or "Yükleme" in r.text
+    assert "-125" not in r.text
+
+def test_load_balance_sets_flash_cookie(client, admin_db):
+    login_admin(client, admin_db)
+    u = User(sicil_no="f2", ad_soyad="Flaslı", role="personel",
+             password_hash="x")
+    admin_db.add(u); admin_db.commit()
+    r = client.post(f"/admin/users/{u.id}/load-balance",
+                    data={"amount": "250.00"}, follow_redirects=False)
+    assert r.status_code == 303
+    assert "flash=" in r.headers.get("set-cookie", "")

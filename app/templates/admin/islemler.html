@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}İşlemler{% endblock %}
+{% block topbar %}
+{% set aktif_sayfa = 'islemler' %}
+{% include "admin/_nav.html" %}
+{% endblock %}
+{% block content %}
+<div class="icerik">
+  <div class="kart">
+    <table class="tablo">
+      <thead>
+        <tr><th>Personel</th><th>Tür</th><th class="sag">Tutar</th></tr>
+      </thead>
+      <tbody>
+        {% for tx, kullanici in page_obj.items %}
+        <tr>
+          <td>{{ kullanici.ad_soyad }}</td>
+          <td>{{ tx.type }}</td>
+          <td class="sag">{{ tx.amount }} TL</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="soluk">İşlem bulunamadı</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

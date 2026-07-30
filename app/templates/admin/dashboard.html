@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Genel Bakış{% endblock %}
+{% block topbar %}
+{% set aktif_sayfa = 'genel' %}
+{% include "admin/_nav.html" %}
+{% endblock %}
+{% block content %}
+<div class="icerik">
+  {% if flash %}<div class="uyari-{{ flash.tur }}">{{ flash.mesaj }}</div>{% endif %}
+  <div class="kart">
+    <div>Bugün Yiyen: {{ stats.bugun_yiyen }}</div>
+    <div>Aktif Personel: {{ stats.aktif_personel }}</div>
+    <div>Toplam Bakiye: {{ stats.toplam_bakiye }} TL</div>
+    <div>Bugün Ciro: {{ stats.bugun_ciro }} TL</div>
+    <div>Yemek Ücreti: {{ meal_price }} TL</div>
+  </div>
+</div>
+{% endblock %}

@@ -7,7 +7,7 @@
 {% block content %}
 <div class="icerik">
   <div style="display:flex; align-items:center; gap: var(--k-a2); margin-bottom: var(--k-a3); flex-wrap: wrap;">
-    <form method="get" action="/admin" style="display:flex; gap: var(--k-a2); flex: 1;">
+    <form method="get" action="/admin/personel" style="display:flex; gap: var(--k-a2); flex: 1;">
       <input class="alan" type="text" name="q" value="{{ q }}" placeholder="Sicil no veya ad soyad" style="max-width: 320px;">
       <button class="btn btn-ikincil" type="submit">Ara</button>
     </form>
@@ -26,7 +26,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for u in users %}
+        {% for u in page_obj.items %}
         <tr class="{{ '' if u.is_active else 'satir-pasif' }}">
           <td>{{ u.sicil_no }}</td>
           <td>{{ u.ad_soyad }}</td>
