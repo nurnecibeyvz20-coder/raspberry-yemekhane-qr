@@ -72,21 +72,50 @@ document.addEventListener("click", () => input.focus());
 input.addEventListener("blur", () => setTimeout(() => input.focus(), 0));
 input.focus();
 
-input.addEventListener("keydown", async (e) => {
+// HID okuyucu ABD düzenine göre tuş kodu gönderir; işletim sistemi
+// klavye düzeni (örn. Türkçe) karakterleri bozabilir (i -> î gibi).
+// Bu yüzden yazılan karaktere (e.key) değil FİZİKSEL tuşa (e.code)
+// bakarak token'ı kendimiz kurarız — düzenden bağımsız çalışır.
+let buffer = "";
+
+function charFromCode(e) {
+    const c = e.code;
+    if (c.length === 4 && c.startsWith("Key"))
+        return e.shiftKey ? c[3] : c[3].toLowerCase();
+    if (c.length === 6 && c.startsWith("Digit") && !e.shiftKey)
+        return c[5];
+    if (c === "Minus") return e.shiftKey ? "_" : "-";
+    if (c === "Period" && !e.shiftKey) return ".";
+    return null;  // token alfabesi dışı tuşlar yok sayılır
+}
+
+async function submitToken(token) {
+    if (!token) return;
+    try {
+        const r = await fetch("/api/checkin", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({token})
+        });
+        showResult(await r.json());
+    } catch {
+        showConnecting();
+    }
+}
+
+document.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
-        const token = input.value.trim();
+        e.preventDefault();
+        const token = buffer;
+        buffer = "";
         input.value = "";
-        if (!token) return;
-        try {
-            const r = await fetch("/api/checkin", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({token})
-            });
-            showResult(await r.json());
-        } catch {
-            showConnecting();
-        }
+        submitToken(token);
+        return;
+    }
+    const ch = charFromCode(e);
+    if (ch !== null) {
+        buffer += ch;
+        e.preventDefault();  // düzenin bozduğu karakter input'a yazılmasın
     }
 });
 
