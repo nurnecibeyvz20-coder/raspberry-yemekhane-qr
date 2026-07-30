@@ -60,20 +60,19 @@ const result = document.getElementById("result");
 const connecting = document.getElementById("connecting");
 let resetTimer = null;
 
-// Sesleri önceden yükle (her seferinde yeni Audio oluşturmak ağ/zamanlama
-// yüzünden sessiz kalabiliyor). Chromium autoplay politikası için kiosk
-// --autoplay-policy=no-user-gesture-required ile başlatılır.
-const sesOk = new Audio("/static/sounds/ok.wav");
-const sesHata = new Audio("/static/sounds/error.wav");
-sesOk.preload = "auto";
-sesHata.preload = "auto";
-
-function sesCal(ok) {
-    const ses = ok ? sesOk : sesHata;
+// Sesli anons: sunucu imzalı metni /api/tts ile seslendirir. Chromium
+// autoplay politikası için kiosk --autoplay-policy=no-user-gesture-required
+// ile başlatılır.
+let aktifAnons = null;
+function anonsCal(anons) {
+    if (!anons || !anons.text) return;
     try {
-        ses.currentTime = 0;
-        ses.play().catch(() => {});
-    } catch (e) { /* ses hiçbir zaman akışı bozmasın */ }
+        if (aktifAnons) { aktifAnons.pause(); }
+        aktifAnons = new Audio("/api/tts?text=" +
+            encodeURIComponent(anons.text) + "&sig=" +
+            encodeURIComponent(anons.sig));
+        aktifAnons.play().catch(() => {});
+    } catch (e) { /* ses akisi bozmasin */ }
 }
 
 function show(el) {
@@ -166,7 +165,7 @@ function showResult(d) {
     document.getElementById("result-name").textContent = d.ad_soyad || "";
     document.getElementById("result-balance").textContent =
         d.balance != null ? "Kalan: " + d.balance + " TL" : "";
-    sesCal(d.ok);
+    anonsCal(d.anons);
     clearTimeout(resetTimer);
     resetTimer = setTimeout(backToIdle, 5000);
 }
