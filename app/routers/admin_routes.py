@@ -42,9 +42,16 @@ def _render_with_flash(request: Request, template: str, context: dict):
 
 @router.get("/admin", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)):
+    stats = dashboard_stats(db)
+    # Son islemlerdeki kisi adlari icin id -> ad_soyad haritasi
+    # (Transaction modelinde user iliskisi yok).
+    ids = {t.user_id for t in stats["son_islemler"]}
+    isim_map = dict(db.query(User.id, User.ad_soyad)
+                      .filter(User.id.in_(ids)).all()) if ids else {}
     return _render_with_flash(
         request, "admin/dashboard.html",
-        {"stats": dashboard_stats(db),
+        {"stats": stats,
+         "isim_map": isim_map,
          "meal_price": get_meal_price(db),
          "aktif_sayfa": "genel"})
 
@@ -205,14 +212,10 @@ def load_balance(user_id: int, amount: str = Form(...),
 
 @router.get("/admin/settings", response_class=HTMLResponse)
 def settings_page(request: Request, db: Session = Depends(get_db)):
-    flash_data = get_flash(request)
-    resp = templates.TemplateResponse(
+    return _render_with_flash(
         request, "admin/settings.html",
         {"meal_price": get_meal_price(db), "error": None,
-         "saved": False, "flash": flash_data})
-    if flash_data:
-        resp.delete_cookie("flash")
-    return resp
+         "aktif_sayfa": "ayarlar"})
 
 @router.post("/admin/settings")
 def update_settings(request: Request,
@@ -226,7 +229,7 @@ def update_settings(request: Request,
         return templates.TemplateResponse(
             request, "admin/settings.html",
             {"meal_price": get_meal_price(db),
-             "error": "Geçersiz fiyat", "saved": False},
+             "error": "Geçersiz fiyat", "aktif_sayfa": "ayarlar"},
             status_code=200)
     row = db.get(Setting, "meal_price")
     if row is None:

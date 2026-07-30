@@ -1,10 +1,18 @@
 {% extends "base.html" %}
+{% from "_icons.html" import ikon %}
 {% block title %}{{ user.ad_soyad }}{% endblock %}
 {% block topbar %}
 {% set aktif_sayfa = 'personel' %}
 {% include "admin/_nav.html" %}
 {% endblock %}
 {% block content %}
+{# Gecici toast: Task 4'te _base.html'e gecince kaldirilacak #}
+{% if flash %}
+<div class="toast toast-{{ flash.tur }}" id="toast">
+  {{ ikon('onay' if flash.tur == 'basari' else 'uyari') }} {{ flash.mesaj }}
+</div>
+<script>setTimeout(() => document.getElementById("toast")?.remove(), 4000);</script>
+{% endif %}
 <div class="icerik">
   <div class="kart">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap: var(--k-a3); flex-wrap: wrap;">

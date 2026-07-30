@@ -1,20 +1,13 @@
-{% extends "base.html" %}
+{% extends "admin/_base.html" %}
 {% block title %}Ayarlar{% endblock %}
-{% block topbar %}
-{% set aktif_sayfa = 'ayarlar' %}
-{% include "admin/_nav.html" %}
-{% endblock %}
-{% block content %}
-<div class="icerik" style="max-width: 480px;">
-  <div class="kart">
-    <h1 class="baslik">Ayarlar</h1>
-    {% if error %}<div class="bant-hata">{{ error }}</div>{% endif %}
-    {% if saved %}<div class="bant-basari">Kaydedildi</div>{% endif %}
-    <form method="post" action="/admin/settings">
-      <label class="alan-etiket" for="meal_price">Yemek Fiyatı (TL)</label>
-      <input class="alan" id="meal_price" type="text" name="meal_price" value="{{ meal_price }}" required>
-      <button class="btn ust-bosluk" type="submit">Kaydet</button>
-    </form>
-  </div>
+{% block baslik %}Ayarlar{% endblock %}
+{% block govde %}
+<div class="kart" style="max-width: 480px;">
+  {% if error %}<div class="bant-hata">{{ error }}</div>{% endif %}
+  <form method="post" action="/admin/settings">
+    <label class="alan-etiket" for="meal_price">Yemek Fiyatı (TL)</label>
+    <input class="alan" id="meal_price" type="text" name="meal_price" value="{{ meal_price }}" required>
+    <button class="btn ust-bosluk" type="submit">Kaydet</button>
+  </form>
 </div>
 {% endblock %}

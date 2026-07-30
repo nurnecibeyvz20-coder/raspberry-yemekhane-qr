@@ -1,18 +1,78 @@
-{% extends "base.html" %}
+{% extends "admin/_base.html" %}
+{% from "_icons.html" import ikon %}
 {% block title %}Genel Bakış{% endblock %}
-{% block topbar %}
-{% set aktif_sayfa = 'genel' %}
-{% include "admin/_nav.html" %}
-{% endblock %}
-{% block content %}
-<div class="icerik">
-  {% if flash %}<div class="uyari-{{ flash.tur }}">{{ flash.mesaj }}</div>{% endif %}
+{% block baslik %}Genel Bakış{% endblock %}
+{% block govde %}
+{% set tur_adlari = {"yukleme": "Yükleme", "yemek": "Yemek", "duzeltme": "Düzeltme"} %}
+<div class="stat-kartlar">
+  <div class="stat-kart">
+    <div>
+      <div class="sayi">{{ stats.bugun_yiyen }}</div>
+      <div class="etiket">Bugün Yiyen</div>
+    </div>
+    <div class="stat-ikon">{{ ikon('onay', 24) }}</div>
+  </div>
+  <div class="stat-kart">
+    <div>
+      <div class="sayi">{{ stats.aktif_personel }}</div>
+      <div class="etiket">Aktif Personel</div>
+    </div>
+    <div class="stat-ikon">{{ ikon('personel', 24) }}</div>
+  </div>
+  <div class="stat-kart">
+    <div>
+      <div class="sayi">{{ stats.toplam_bakiye }} TL</div>
+      <div class="etiket">Toplam Bakiye</div>
+    </div>
+    <div class="stat-ikon">{{ ikon('islemler', 24) }}</div>
+  </div>
+  <div class="stat-kart">
+    <div>
+      <div class="sayi">{{ stats.bugun_ciro }} TL</div>
+      <div class="etiket">Bugün Ciro (yemek ücreti: {{ meal_price }} TL)</div>
+    </div>
+    <div class="stat-ikon">{{ ikon('para', 24) }}</div>
+  </div>
+</div>
+
+<div class="panel-cift">
   <div class="kart">
-    <div>Bugün Yiyen: {{ stats.bugun_yiyen }}</div>
-    <div>Aktif Personel: {{ stats.aktif_personel }}</div>
-    <div>Toplam Bakiye: {{ stats.toplam_bakiye }} TL</div>
-    <div>Bugün Ciro: {{ stats.bugun_ciro }} TL</div>
-    <div>Yemek Ücreti: {{ meal_price }} TL</div>
+    <h2 class="baslik">Son İşlemler</h2>
+    <table class="tablo">
+      <thead>
+        <tr><th>Tarih</th><th>Kişi</th><th>Tür</th><th class="sag">Tutar</th></tr>
+      </thead>
+      <tbody>
+        {% for t in stats.son_islemler %}
+        <tr>
+          <td>{{ t.created_at.strftime("%d.%m.%Y %H:%M") }}</td>
+          <td>{{ isim_map.get(t.user_id, "—") }}</td>
+          <td><span class="rozet {{ '' if t.type == 'yukleme' else 'rozet-gri' }}">{{ tur_adlari.get(t.type, t.type) }}</span></td>
+          <td class="sag {{ 'tutar-eksi' if t.amount < 0 else 'tutar-arti' }}">{{ "+" if t.amount > 0 else "" }}{{ t.amount }} TL</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="soluk">Henüz işlem yok</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="kart">
+    <h2 class="baslik">Son Başarısız Okutmalar</h2>
+    <table class="tablo">
+      <thead>
+        <tr><th>Saat</th><th>Sebep</th></tr>
+      </thead>
+      <tbody>
+        {% for h in stats.son_hatalar %}
+        <tr>
+          <td>{{ h.created_at.strftime("%d.%m.%Y %H:%M") }}</td>
+          <td><span class="rozet rozet-gri">{{ h.reason }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="2" class="soluk">Başarısız okutma yok</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 {% endblock %}

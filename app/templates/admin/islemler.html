@@ -1,28 +1,49 @@
-{% extends "base.html" %}
+{% extends "admin/_base.html" %}
 {% block title %}İşlemler{% endblock %}
-{% block topbar %}
-{% set aktif_sayfa = 'islemler' %}
-{% include "admin/_nav.html" %}
-{% endblock %}
-{% block content %}
-<div class="icerik">
-  <div class="kart">
-    <table class="tablo">
-      <thead>
-        <tr><th>Personel</th><th>Tür</th><th class="sag">Tutar</th></tr>
-      </thead>
-      <tbody>
-        {% for tx, kullanici in page_obj.items %}
-        <tr>
-          <td>{{ kullanici.ad_soyad }}</td>
-          <td>{{ tx.type }}</td>
-          <td class="sag">{{ tx.amount }} TL</td>
-        </tr>
-        {% else %}
-        <tr><td colspan="3" class="soluk">İşlem bulunamadı</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+{% block baslik %}İşlemler{% endblock %}
+{% block govde %}
+{% set tur_adlari = {"yukleme": "Yükleme", "yemek": "Yemek", "duzeltme": "Düzeltme"} %}
+<div style="display:flex; gap: var(--k-a1); margin-bottom: var(--k-a2); flex-wrap: wrap;">
+  <a class="btn {{ '' if not tur else 'btn-ikincil' }}" href="/admin/islemler">Tümü</a>
+  <a class="btn {{ '' if tur == 'yukleme' else 'btn-ikincil' }}" href="/admin/islemler?tur=yukleme">Yükleme</a>
+  <a class="btn {{ '' if tur == 'yemek' else 'btn-ikincil' }}" href="/admin/islemler?tur=yemek">Yemek</a>
+  <a class="btn {{ '' if tur == 'duzeltme' else 'btn-ikincil' }}" href="/admin/islemler?tur=duzeltme">Düzeltme</a>
 </div>
+<div class="kart">
+  <table class="tablo">
+    <thead>
+      <tr>
+        <th>Tarih</th>
+        <th>Kişi</th>
+        <th>Tür</th>
+        <th class="sag">Tutar</th>
+        <th class="sag">Sonrası Bakiye</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tx, kullanici in page_obj.items %}
+      <tr>
+        <td>{{ tx.created_at.strftime("%d.%m.%Y %H:%M") }}</td>
+        <td>{{ kullanici.ad_soyad }}</td>
+        <td><span class="rozet {{ '' if tx.type == 'yukleme' else 'rozet-gri' }}">{{ tur_adlari.get(tx.type, tx.type) }}</span></td>
+        <td class="sag {{ 'tutar-eksi' if tx.amount < 0 else 'tutar-arti' }}">{{ "+" if tx.amount > 0 else "" }}{{ tx.amount }} TL</td>
+        <td class="sag">{{ tx.balance_after }} TL</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="soluk">İşlem bulunamadı</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page_obj.pages > 1 %}
+<div class="sayfalama">
+  {% if page_obj.page > 1 %}
+  <a href="/admin/islemler?page={{ page_obj.page - 1 }}{{ '&tur=' ~ tur if tur else '' }}">&laquo; Önceki</a>
+  {% endif %}
+  <span>Sayfa {{ page_obj.page }} / {{ page_obj.pages }} ({{ page_obj.total }} kayıt)</span>
+  {% if page_obj.page < page_obj.pages %}
+  <a href="/admin/islemler?page={{ page_obj.page + 1 }}{{ '&tur=' ~ tur if tur else '' }}">Sonraki &raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
 {% endblock %}
