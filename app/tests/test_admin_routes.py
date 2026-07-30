@@ -33,6 +33,23 @@ def test_create_user(client, admin_db):
     u = admin_db.query(User).filter_by(sicil_no="3001").one()
     assert u.ad_soyad == "Yeni Kişi"
 
+def test_create_user_duplicate(client, admin_db):
+    login_admin(client, admin_db)
+    client.post("/admin/users/new",
+                data={"sicil_no": "3001", "ad_soyad": "İlk Kişi",
+                      "password": "sifre123", "role": "personel"})
+    r = client.post("/admin/users/new",
+                    data={"sicil_no": "3001", "ad_soyad": "İkinci Kişi",
+                          "password": "sifre456", "role": "personel"},
+                    follow_redirects=True)
+    # Hata flash ile listeye redirect edilir; toast metni sayfada gorunur
+    assert r.history and r.history[0].status_code == 303
+    assert r.history[0].headers["location"] == "/admin/personel"
+    assert "Bu sicil no zaten kayıtlı" in r.text
+    users = admin_db.query(User).filter_by(sicil_no="3001").all()
+    assert len(users) == 1
+    assert users[0].ad_soyad == "İlk Kişi"
+
 def test_load_balance(client, admin_db):
     admin = login_admin(client, admin_db)
     u = User(sicil_no="3002", ad_soyad="B", role="personel",

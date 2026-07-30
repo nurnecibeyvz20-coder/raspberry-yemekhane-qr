@@ -92,14 +92,8 @@ def islemler_list(request: Request, page: int = 1, tur: str = "",
         request, "admin/islemler.html",
         {"page_obj": page_obj, "tur": tur, "aktif_sayfa": "islemler"})
 
-@router.get("/admin/users/new", response_class=HTMLResponse)
-def new_user_page(request: Request):
-    return templates.TemplateResponse(
-        request, "admin/form.html", {"error": None, "form": {}})
-
 @router.post("/admin/users/new")
-def create_user(request: Request,
-                sicil_no: str = Form(...),
+def create_user(sicil_no: str = Form(...),
                 ad_soyad: str = Form(...),
                 password: str = Form(...),
                 role: str = Form(...),
@@ -113,12 +107,9 @@ def create_user(request: Request,
         db.commit()
     except IntegrityError:
         db.rollback()
-        return templates.TemplateResponse(
-            request, "admin/form.html",
-            {"error": "Bu sicil no zaten kayıtlı",
-             "form": {"sicil_no": sicil_no, "ad_soyad": ad_soyad,
-                      "role": role}},
-            status_code=200)
+        resp = RedirectResponse("/admin/personel", status_code=303)
+        set_flash(resp, "Bu sicil no zaten kayıtlı", "hata")
+        return resp
     resp = RedirectResponse("/admin/personel", status_code=303)
     set_flash(resp, "Personel eklendi")
     return resp
@@ -140,7 +131,7 @@ def user_detail(request: Request, user_id: int,
     return _render_with_flash(
         request, "admin/detail.html",
         {"user": user, "transactions": transactions,
-         "meal_entries": meal_entries})
+         "meal_entries": meal_entries, "aktif_sayfa": "personel"})
 
 @router.post("/admin/users/{user_id}/edit")
 def edit_user(user_id: int,

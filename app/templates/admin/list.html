@@ -1,53 +1,169 @@
-{% extends "base.html" %}
+{% extends "admin/_base.html" %}
 {% from "_icons.html" import ikon %}
-{% block title %}Personel Listesi{% endblock %}
-{% block topbar %}
-{% set aktif_sayfa = 'personel' %}
-{% include "admin/_nav.html" %}
-{% endblock %}
-{% block content %}
-{# Gecici toast: Task 4'te _base.html'e gecince kaldirilacak #}
-{% if flash %}
-<div class="toast toast-{{ flash.tur }}" id="toast">
-  {{ ikon('onay' if flash.tur == 'basari' else 'uyari') }} {{ flash.mesaj }}
+{% block title %}Personel{% endblock %}
+{% block baslik %}Personel{% endblock %}
+{% block govde %}
+<div style="display:flex; align-items:center; gap: var(--k-a2); margin-bottom: var(--k-a3); flex-wrap: wrap;">
+  <form id="arama-form" method="get" action="/admin/personel" style="display:flex; gap: var(--k-a2); flex: 1;">
+    <input class="alan" id="arama-alani" type="text" name="q" value="{{ q }}" placeholder="Sicil no veya ad soyad" style="max-width: 320px;">
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <input type="hidden" name="dir" value="{{ dir }}">
+    <button class="btn btn-ikincil" type="submit">{{ ikon('ara', 16) }} Ara</button>
+  </form>
+  <button class="btn" type="button" data-modal-ac="modal-yeni">{{ ikon('arti', 16) }} Yeni Personel</button>
 </div>
-<script>setTimeout(() => document.getElementById("toast")?.remove(), 4000);</script>
-{% endif %}
-<div class="icerik">
-  <div style="display:flex; align-items:center; gap: var(--k-a2); margin-bottom: var(--k-a3); flex-wrap: wrap;">
-    <form method="get" action="/admin/personel" style="display:flex; gap: var(--k-a2); flex: 1;">
-      <input class="alan" type="text" name="q" value="{{ q }}" placeholder="Sicil no veya ad soyad" style="max-width: 320px;">
-      <button class="btn btn-ikincil" type="submit">Ara</button>
-    </form>
-    <a class="btn" href="/admin/users/new">Yeni Personel</a>
-  </div>
-  <div class="kart">
-    <table class="tablo">
-      <thead>
-        <tr>
-          <th>Sicil No</th>
-          <th>Ad Soyad</th>
-          <th>Rol</th>
-          <th class="sag">Bakiye</th>
-          <th>Durum</th>
-          <th>İşlem</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for u in page_obj.items %}
-        <tr class="{{ '' if u.is_active else 'satir-pasif' }}">
-          <td>{{ u.sicil_no }}</td>
-          <td>{{ u.ad_soyad }}</td>
-          <td><span class="rozet {{ '' if u.role == 'admin' else 'rozet-gri' }}">{{ u.role }}</span></td>
-          <td class="sag">{{ u.balance }} TL</td>
-          <td><span class="rozet {{ '' if u.is_active else 'rozet-gri' }}">{{ "Aktif" if u.is_active else "Pasif" }}</span></td>
-          <td><a href="/admin/users/{{ u.id }}">Detay</a></td>
-        </tr>
-        {% else %}
-        <tr><td colspan="6" class="soluk">Kayıt bulunamadı</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+<div class="kart">
+  <table class="tablo">
+    <thead>
+      <tr>
+        <th><a class="siralama" href="?q={{ q }}&sort=sicil_no&dir={{ 'desc' if sort == 'sicil_no' and dir == 'asc' else 'asc' }}">Sicil No{% if sort == 'sicil_no' %} {{ '▲' if dir == 'asc' else '▼' }}{% endif %}</a></th>
+        <th><a class="siralama" href="?q={{ q }}&sort=ad_soyad&dir={{ 'desc' if sort == 'ad_soyad' and dir == 'asc' else 'asc' }}">Ad Soyad{% if sort == 'ad_soyad' %} {{ '▲' if dir == 'asc' else '▼' }}{% endif %}</a></th>
+        <th>Rol</th>
+        <th class="sag"><a class="siralama" href="?q={{ q }}&sort=balance&dir={{ 'desc' if sort == 'balance' and dir == 'asc' else 'asc' }}">Bakiye{% if sort == 'balance' %} {{ '▲' if dir == 'asc' else '▼' }}{% endif %}</a></th>
+        <th>Durum</th>
+        <th class="sag">İşlem</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in page_obj.items %}
+      <tr class="{{ '' if u.is_active else 'satir-pasif' }}">
+        <td>{{ u.sicil_no }}</td>
+        <td><a href="/admin/users/{{ u.id }}">{{ u.ad_soyad }}</a></td>
+        <td><span class="rozet {{ '' if u.role == 'admin' else 'rozet-gri' }}">{{ u.role }}</span></td>
+        <td class="sag">{{ u.balance }} TL</td>
+        <td><span class="rozet {{ '' if u.is_active else 'rozet-gri' }}">{{ "Aktif" if u.is_active else "Pasif" }}</span></td>
+        <td class="sag">
+          <div class="islem-ikonlar">
+            <button class="ikon-btn" type="button" title="Bakiye yükle"
+                    data-modal-ac="modal-bakiye"
+                    data-doldur-ad="{{ u.ad_soyad }}"
+                    data-doldur-bakiye="{{ u.balance }}"
+                    data-doldur-action="/admin/users/{{ u.id }}/load-balance">{{ ikon('para', 16) }}</button>
+            <a class="ikon-btn" href="/admin/users/{{ u.id }}" title="Düzenle">{{ ikon('duzenle', 16) }}</a>
+            <button class="ikon-btn" type="button" title="Şifre sıfırla"
+                    data-modal-ac="modal-sifre"
+                    data-doldur-ad="{{ u.ad_soyad }}"
+                    data-doldur-action="/admin/users/{{ u.id }}/password">{{ ikon('anahtar', 16) }}</button>
+            <form method="post" action="/admin/users/{{ u.id }}/toggle-active" style="display:inline; margin:0;"
+                  onsubmit="return confirm('{{ u.ad_soyad }} {{ 'pasife alınsın mı?' if u.is_active else 'aktifleştirilsin mi?' }}')">
+              <input type="hidden" name="next" value="personel">
+              <button class="ikon-btn {{ 'ikon-btn-tehlike' if u.is_active else '' }}" type="submit"
+                      title="{{ 'Pasife al' if u.is_active else 'Aktifleştir' }}">{{ ikon('guc', 16) }}</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="soluk">Kayıt bulunamadı</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
+<div class="sayfalama">
+  <span>{{ page_obj.total }} personel</span>
+  {% if page_obj.page > 1 %}
+  <a href="?q={{ q }}&sort={{ sort }}&dir={{ dir }}&page={{ page_obj.page - 1 }}">&#9664;</a>
+  {% endif %}
+  {% if page_obj.pages > 1 %}
+  <span>Sayfa {{ page_obj.page }} / {{ page_obj.pages }}</span>
+  {% endif %}
+  {% if page_obj.page < page_obj.pages %}
+  <a href="?q={{ q }}&sort={{ sort }}&dir={{ dir }}&page={{ page_obj.page + 1 }}">&#9654;</a>
+  {% endif %}
+</div>
+
+<dialog class="modal" id="modal-yeni">
+  <div class="modal-baslik">
+    <h2 class="baslik">Yeni Personel</h2>
+    <button class="ikon-btn" type="button" data-modal-kapat>&times;</button>
+  </div>
+  <form method="post" action="/admin/users/new">
+    <input type="hidden" name="next" value="personel">
+    <label class="alan-etiket" for="yeni_sicil_no">Sicil No</label>
+    <input class="alan" id="yeni_sicil_no" type="text" name="sicil_no" required>
+    <label class="alan-etiket" for="yeni_ad_soyad">Ad Soyad</label>
+    <input class="alan" id="yeni_ad_soyad" type="text" name="ad_soyad" required>
+    <label class="alan-etiket" for="yeni_password">Şifre</label>
+    <input class="alan" id="yeni_password" type="password" name="password" required>
+    <label class="alan-etiket" for="yeni_role">Rol</label>
+    <select class="alan" id="yeni_role" name="role">
+      <option value="personel" selected>Personel</option>
+      <option value="admin">Admin</option>
+    </select>
+    <button class="btn btn-blok ust-bosluk" type="submit">Kaydet</button>
+  </form>
+</dialog>
+
+<dialog class="modal" id="modal-bakiye">
+  <div class="modal-baslik">
+    <h2 class="baslik">Bakiye Yükle</h2>
+    <button class="ikon-btn" type="button" data-modal-kapat>&times;</button>
+  </div>
+  <div class="soluk" style="margin-bottom: var(--k-a2);">
+    <span data-hedef="ad"></span> — mevcut bakiye: <span data-hedef="bakiye"></span> TL
+  </div>
+  <form method="post" data-hedef="form">
+    <input type="hidden" name="next" value="personel">
+    <label class="alan-etiket" for="bakiye_tutar">Tutar (negatif = düzeltme)</label>
+    <input class="alan" id="bakiye_tutar" type="text" name="amount" required>
+    <div style="display:flex; gap: var(--k-a1); margin-top: var(--k-a1); flex-wrap: wrap;">
+      <button class="btn btn-ikincil" type="button" data-tutar="125">+125</button>
+      <button class="btn btn-ikincil" type="button" data-tutar="250">+250</button>
+      <button class="btn btn-ikincil" type="button" data-tutar="500">+500</button>
+      <button class="btn btn-ikincil" type="button" data-tutar="625">+625</button>
+    </div>
+    <button class="btn btn-blok ust-bosluk" type="submit">Yükle</button>
+  </form>
+</dialog>
+
+<dialog class="modal" id="modal-sifre">
+  <div class="modal-baslik">
+    <h2 class="baslik">Şifre Sıfırla</h2>
+    <button class="ikon-btn" type="button" data-modal-kapat>&times;</button>
+  </div>
+  <div class="soluk" style="margin-bottom: var(--k-a2);"><span data-hedef="ad"></span></div>
+  <form method="post" data-hedef="form">
+    <input type="hidden" name="next" value="personel">
+    <label class="alan-etiket" for="sifre_yeni">Yeni Şifre</label>
+    <input class="alan" id="sifre_yeni" type="password" name="new_password" required>
+    <button class="btn btn-blok ust-bosluk" type="submit">Sıfırla</button>
+  </form>
+</dialog>
+
+<script>
+// Arama: 400ms debounce ile formu otomatik gonder
+const aramaForm = document.getElementById("arama-form");
+let aramaZamanlayici;
+document.getElementById("arama-alani").addEventListener("input", () => {
+  clearTimeout(aramaZamanlayici);
+  aramaZamanlayici = setTimeout(() => aramaForm.submit(), 400);
+});
+
+// Modal ac: data-doldur-* ozelliklerini dialog icine aktar
+document.querySelectorAll("[data-modal-ac]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const dlg = document.getElementById(btn.dataset.modalAc);
+    if (!dlg) return;
+    const ad = dlg.querySelector('[data-hedef="ad"]');
+    if (ad) ad.textContent = btn.dataset.doldurAd || "";
+    const bakiye = dlg.querySelector('[data-hedef="bakiye"]');
+    if (bakiye) bakiye.textContent = btn.dataset.doldurBakiye || "";
+    const form = dlg.querySelector('[data-hedef="form"]');
+    if (form && btn.dataset.doldurAction) form.action = btn.dataset.doldurAction;
+    dlg.showModal();
+  });
+});
+
+// Kapat butonlari (ESC zaten dialog'un varsayilan davranisi)
+document.querySelectorAll("[data-modal-kapat]").forEach(btn => {
+  btn.addEventListener("click", () => btn.closest("dialog").close());
+});
+
+// Hizli tutar butonlari
+document.querySelectorAll("[data-tutar]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.getElementById("bakiye_tutar").value = btn.dataset.tutar;
+  });
+});
+</script>
 {% endblock %}
