@@ -6,6 +6,18 @@ from sqlalchemy.pool import StaticPool
 from app.main import app
 from app.db import Base, get_db
 
+@pytest.fixture(autouse=True)
+def _servis_saati_serbest(request, monkeypatch):
+    """Saat testleri dışında servis saatini tüm güne aç."""
+    if ("saat" in request.node.name or "hours" in request.node.name
+            or "boundary" in request.node.name or "close" in request.node.name):
+        yield
+        return
+    from datetime import time as _t
+    monkeypatch.setattr("app.services.checkin.get_service_hours",
+                        lambda db: (_t(0, 0), _t(23, 59)))
+    yield
+
 @pytest.fixture
 def client():
     return TestClient(app, client=("127.0.0.1", 50000))

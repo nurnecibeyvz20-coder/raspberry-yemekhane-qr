@@ -1,5 +1,5 @@
 from decimal import Decimal
-from datetime import date
+from datetime import date, time as dtime
 from app.qr_token import generate_token
 from app.models import User, MealEntry, Transaction, FailedAttempt
 from app.services.checkin import process_checkin, get_meal_price
@@ -51,3 +51,46 @@ def test_insufficient_balance(db_session):
     assert r.status == "yetersiz_bakiye"
     db_session.refresh(u)
     assert u.balance == Decimal("100.00")
+
+class SabitDatetime:
+    """checkin.datetime yerine monkeypatch edilir."""
+    sabit = None
+    @classmethod
+    def now(cls):
+        class N:
+            @staticmethod
+            def time():
+                return SabitDatetime.sabit
+        return N()
+
+def _saat_sabitle(monkeypatch, hh, mm):
+    SabitDatetime.sabit = dtime(hh, mm)
+    monkeypatch.setattr("app.services.checkin.datetime", SabitDatetime)
+
+def test_service_hours_defaults(db_session):
+    from app.services.checkin import get_service_hours
+    bas, bit = get_service_hours(db_session)
+    assert bas == dtime(12, 0) and bit == dtime(13, 30)
+
+def test_checkin_outside_hours_rejected(db_session, monkeypatch):
+    u = make_user(db_session, sicil="7001")
+    _saat_sabitle(monkeypatch, 15, 0)
+    r = process_checkin(db_session, generate_token(u.id))
+    assert r.status == "saat_disi"
+    db_session.refresh(u)
+    assert u.balance == Decimal("500.00")          # bakiye düşmedi
+    assert db_session.query(MealEntry).count() == 0
+    assert db_session.query(FailedAttempt).one().reason == "saat_disi"
+
+def test_checkin_boundary_times_accepted(db_session, monkeypatch):
+    u1 = make_user(db_session, sicil="7002")
+    _saat_sabitle(monkeypatch, 12, 0)              # tam açılış
+    assert process_checkin(db_session, generate_token(u1.id)).ok
+    u2 = make_user(db_session, sicil="7003")
+    _saat_sabitle(monkeypatch, 13, 30)             # tam kapanış
+    assert process_checkin(db_session, generate_token(u2.id)).ok
+
+def test_checkin_just_after_close_rejected(db_session, monkeypatch):
+    u = make_user(db_session, sicil="7004")
+    _saat_sabitle(monkeypatch, 13, 31)
+    assert process_checkin(db_session, generate_token(u.id)).status == "saat_disi"
