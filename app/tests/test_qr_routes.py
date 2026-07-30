@@ -38,6 +38,20 @@ def test_qr_page_shows_history_and_meals(client, seeded_db):
     assert "+500.00" in r.text
     assert "4 öğün" in r.text   # 500 // 125
 
+def test_qr_token_api_reports_ate_today(client, seeded_db):
+    from datetime import date
+    from app.db import get_db
+    from app.main import app
+    from app.models import MealEntry
+    login(client)
+    r = client.get("/api/qr-token")
+    assert r.json()["ate_today"] is False
+    db = next(app.dependency_overrides[get_db]())
+    db.add(MealEntry(user_id=seeded_db, entry_date=date.today()))
+    db.commit()
+    r = client.get("/api/qr-token")
+    assert r.json()["ate_today"] is True
+
 def test_change_password(client, seeded_db):
     login(client)
     r = client.post("/change-password",

@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
@@ -6,9 +8,14 @@ from app.auth import current_user, hash_password, verify_password
 from app.config import settings
 from app.db import get_db
 from app.deps import templates
-from app.models import Transaction, User
+from app.models import MealEntry, Transaction, User
 from app.qr_token import generate_token
 from app.services.checkin import get_meal_price
+
+def _ate_today(db: Session, user_id: int) -> bool:
+    return (db.query(MealEntry)
+              .filter_by(user_id=user_id, entry_date=date.today())
+              .first() is not None)
 
 router = APIRouter()
 
@@ -28,6 +35,7 @@ def qr_page(request: Request,
         "low_balance": user.balance < price,
         "gecmis": gecmis,
         "ogun_sayisi": int(user.balance // price),
+        "ate_today": _ate_today(db, user.id),
     })
 
 @router.get("/api/qr-token")
@@ -38,6 +46,7 @@ def qr_token(user: User = Depends(current_user),
         "token": generate_token(user.id),
         "balance": str(user.balance),
         "low_balance": user.balance < price,
+        "ate_today": _ate_today(db, user.id),
         "ttl": settings.qr_token_ttl,
     }
 

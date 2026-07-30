@@ -18,11 +18,18 @@
 <div class="icerik" style="max-width: 420px;">
   <div id="low-band" class="bant-hata" style="display: {{ 'block' if low_balance else 'none' }}; text-align:center;">Bakiyeniz yetersiz</div>
   <div class="kart" style="text-align: center;">
-    <div id="qrcode" style="display:inline-block; padding: 12px; border: 1px solid var(--k-cizgi); border-radius: var(--k-radius); background: var(--k-beyaz);"></div>
+    <div id="yedi-karti" style="display: {{ 'block' if ate_today else 'none' }}; padding: 32px 8px;">
+      <div style="font-size: 64px; color: var(--k-basari); line-height: 1;">&#10004;</div>
+      <div style="font-size: 22px; font-weight: 700; color: var(--k-birincil); margin-top: 12px;">Bugün yemek yediniz</div>
+      <div class="soluk" style="margin-top: 8px;">Afiyet olsun! QR kodunuz yarın yeniden aktif olur.</div>
+    </div>
+    <div id="qr-alani" style="display: {{ 'none' if ate_today else 'block' }};">
+      <div id="qrcode" style="display:inline-block; padding: 12px; border: 1px solid var(--k-cizgi); border-radius: var(--k-radius); background: var(--k-beyaz);"></div>
+      <div id="countdown" class="soluk ust-bosluk" style="font-size: 14px;"></div>
+    </div>
     <div id="balance" style="font-size: 32px; font-weight: 700; color: var(--k-birincil); margin-top: 16px;">{{ user.balance }} TL</div>
     <div class="soluk">Bakiyeniz</div>
     <div class="ust-bosluk"><span class="rozet">≈ {{ ogun_sayisi }} öğün</span></div>
-    <div id="countdown" class="soluk ust-bosluk" style="font-size: 14px;"></div>
     <a class="soluk" href="/change-password" style="font-size: 13px; display:inline-block; margin-top: 16px;">Şifre değiştir</a>
   </div>
   <div class="kart ust-bosluk">
@@ -53,6 +60,7 @@
 <script>
 let qr = null;
 let countdownTimer = null;
+let ateToday = {{ "true" if ate_today else "false" }};
 
 function startCountdown(s) {
     if (countdownTimer !== null) clearInterval(countdownTimer);
@@ -70,19 +78,42 @@ function startCountdown(s) {
     }, 1000);
 }
 
+function showAteToday() {
+    if (countdownTimer !== null) { clearInterval(countdownTimer); countdownTimer = null; }
+    document.getElementById("qr-alani").style.display = "none";
+    document.getElementById("yedi-karti").style.display = "block";
+}
+
 async function refresh() {
+    if (ateToday) { showAteToday(); return; }
     const r = await fetch("/api/qr-token");
     if (!r.ok) { location.href = "/login"; return; }
     const d = await r.json();
-    document.getElementById("qrcode").innerHTML = "";
-    qr = new QRCode(document.getElementById("qrcode"),
-                    {text: d.token, width: 280, height: 280});
     document.getElementById("balance").textContent = d.balance + " TL";
     document.getElementById("low-band").style.display =
         d.low_balance ? "block" : "none";
+    if (d.ate_today) {           // az önce okuttu: QR'ı kapat, mesajı göster
+        ateToday = true;
+        showAteToday();
+        return;
+    }
+    document.getElementById("qrcode").innerHTML = "";
+    qr = new QRCode(document.getElementById("qrcode"),
+                    {text: d.token, width: 280, height: 280});
     startCountdown(45);
 }
 
 refresh();
+// Okutma sonrasını hızlı yakala: QR aktifken 5 sn'de bir durum yokla
+setInterval(async function () {
+    if (ateToday) return;
+    try {
+        const r = await fetch("/api/qr-token");
+        if (!r.ok) return;
+        const d = await r.json();
+        document.getElementById("balance").textContent = d.balance + " TL";
+        if (d.ate_today) { ateToday = true; showAteToday(); }
+    } catch {}
+}, 5000);
 </script>
 {% endblock %}
