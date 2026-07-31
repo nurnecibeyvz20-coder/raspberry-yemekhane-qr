@@ -157,6 +157,8 @@ def set_password(user_id: int,
                  db: Session = Depends(get_db)):
     user = _get_user_or_404(db, user_id)
     user.password_hash = hash_password(new_password)
+    user.must_change_password = True
+    user.session_version += 1
     db.commit()
     resp = _detail_or_list_redirect(user_id, next)
     set_flash(resp, "Şifre sıfırlandı")

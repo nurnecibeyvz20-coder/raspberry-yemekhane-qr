@@ -17,15 +17,22 @@ def hash_password(plain: str) -> str:
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd.verify(plain, hashed)
 
-def create_session_cookie(user_id: int) -> str:
-    return _signer.sign(str(user_id)).decode()
+def create_session_cookie(user_id: int, session_version: int) -> str:
+    return _signer.sign(f"{user_id}:{session_version}").decode()
 
-def read_session_cookie(value: str) -> int | None:
+def read_session_cookie(value: str) -> tuple[int, int] | None:
     try:
-        raw = _signer.unsign(value, max_age=settings.session_max_age)
-        return int(raw)
+        raw = _signer.unsign(value, max_age=settings.session_max_age).decode()
+        uid, _, ver = raw.partition(":")
+        if not ver:  # eski format (sürümsüz) çerezler geçersiz
+            return None
+        return int(uid), int(ver)
     except (BadSignature, SignatureExpired, ValueError):
         return None
+
+def session_age_for(role: str) -> int:
+    return (settings.admin_session_age if role == "admin"
+            else settings.personel_session_age)
 
 class RateLimiter:
     def __init__(self, limit: int = 10, window: int = 60):
@@ -44,10 +51,17 @@ login_limiter = RateLimiter()
 
 def current_user(request: Request, db: Session = Depends(get_db)) -> User:
     cookie = request.cookies.get("session")
-    user_id = read_session_cookie(cookie) if cookie else None
-    user = db.get(User, user_id) if user_id else None
-    if user is None or not user.is_active:
+    parsed = read_session_cookie(cookie) if cookie else None
+    user = db.get(User, parsed[0]) if parsed else None
+    if (user is None or not user.is_active
+            or user.session_version != parsed[1]):
         raise HTTPException(status_code=303, headers={"Location": "/login"})
+    return user
+
+def current_user_unlocked(user: User = Depends(current_user)) -> User:
+    if user.must_change_password:
+        raise HTTPException(status_code=303,
+                            headers={"Location": "/sifre-degistir-zorunlu"})
     return user
 
 def require_admin(user: User = Depends(current_user)) -> User:

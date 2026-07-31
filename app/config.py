@@ -5,7 +5,9 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///:memory:"
     initial_admin_sicil: str = "admin"
     initial_admin_password: str = "admin123"
-    session_max_age: int = 604800  # 7 gün
+    session_max_age: int = 2592000     # imza max_age (en büyük süre)
+    personel_session_age: int = 2592000  # 30 gün
+    admin_session_age: int = 43200       # 12 saat
     qr_token_ttl: int = 60         # saniye
 
 settings = Settings()

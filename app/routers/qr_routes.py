@@ -4,7 +4,9 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
-from app.auth import current_user, hash_password, verify_password
+from app.auth import (create_session_cookie, current_user,
+                      current_user_unlocked, hash_password,
+                      session_age_for, verify_password)
 from app.config import settings
 from app.db import get_db
 from app.deps import templates
@@ -21,7 +23,7 @@ router = APIRouter()
 
 @router.get("/qr", response_class=HTMLResponse)
 def qr_page(request: Request,
-            user: User = Depends(current_user),
+            user: User = Depends(current_user_unlocked),
             db: Session = Depends(get_db)):
     price = get_meal_price(db)
     gecmis = (db.query(Transaction)
@@ -39,7 +41,7 @@ def qr_page(request: Request,
     })
 
 @router.get("/api/qr-token")
-def qr_token(user: User = Depends(current_user),
+def qr_token(user: User = Depends(current_user_unlocked),
              db: Session = Depends(get_db)):
     price = get_meal_price(db)
     return {
@@ -67,5 +69,14 @@ def change_password(request: Request,
             request, "change_password.html",
             {"user": user, "error": "Eski şifre hatalı"})
     user.password_hash = hash_password(new_password)
+    user.session_version += 1
     db.commit()
-    return RedirectResponse("/qr", status_code=303)
+    response = RedirectResponse("/qr", status_code=303)
+    response.set_cookie(
+        "session",
+        create_session_cookie(user.id, user.session_version),
+        max_age=session_age_for(user.role),
+        httponly=True,
+        samesite="lax",
+    )
+    return response

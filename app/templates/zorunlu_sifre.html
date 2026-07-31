@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Yeni Şifre Belirle{% endblock %}
+{% block content %}
+<div class="sayfa-orta">
+  <div class="kart" style="width: 100%; max-width: 380px;">
+    <h1 class="baslik" style="font-size: 18px;">Yeni şifre belirlemeniz gerekiyor</h1>
+    {% if error %}<div class="bant-hata">{{ error }}</div>{% endif %}
+    <form method="post" action="/sifre-degistir-zorunlu">
+      <label class="alan-etiket" for="new_password">Yeni Şifre</label>
+      <input class="alan" type="password" id="new_password" name="new_password" required minlength="8">
+      <button class="btn btn-blok ust-bosluk" type="submit">Kaydet</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

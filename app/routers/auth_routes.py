@@ -3,8 +3,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth import login_limiter, verify_password, create_session_cookie
-from app.config import settings
+from app.auth import (current_user, create_session_cookie, hash_password,
+                      login_limiter, session_age_for, verify_password)
 from app.db import get_db
 from app.deps import templates
 from app.models import User
@@ -44,8 +44,37 @@ def login(request: Request,
     response = RedirectResponse(url=target, status_code=303)
     response.set_cookie(
         "session",
-        create_session_cookie(user.id),
-        max_age=settings.session_max_age,
+        create_session_cookie(user.id, user.session_version),
+        max_age=session_age_for(user.role),
+        httponly=True,
+        samesite="lax",
+    )
+    return response
+
+@router.get("/sifre-degistir-zorunlu", response_class=HTMLResponse)
+def forced_password_page(request: Request,
+                         user: User = Depends(current_user)):
+    return templates.TemplateResponse(request, "zorunlu_sifre.html",
+                                      {"user": user, "error": None})
+
+@router.post("/sifre-degistir-zorunlu")
+def forced_password_change(request: Request,
+                           new_password: str = Form(...),
+                           user: User = Depends(current_user),
+                           db: Session = Depends(get_db)):
+    if len(new_password) < 8:
+        return templates.TemplateResponse(
+            request, "zorunlu_sifre.html",
+            {"user": user, "error": "Şifre en az 8 karakter olmalı"})
+    user.password_hash = hash_password(new_password)
+    user.must_change_password = False
+    user.session_version += 1
+    db.commit()
+    response = RedirectResponse("/qr", status_code=303)
+    response.set_cookie(
+        "session",
+        create_session_cookie(user.id, user.session_version),
+        max_age=session_age_for(user.role),
         httponly=True,
         samesite="lax",
     )

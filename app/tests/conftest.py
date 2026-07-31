@@ -18,6 +18,13 @@ def _servis_saati_serbest(request, monkeypatch):
                         lambda db: (_t(0, 0), _t(23, 59)))
     yield
 
+@pytest.fixture(autouse=True)
+def _reset_login_limiter():
+    from app.auth import login_limiter
+    login_limiter.hits.clear()
+    yield
+    login_limiter.hits.clear()
+
 @pytest.fixture
 def client():
     return TestClient(app, client=("127.0.0.1", 50000))
