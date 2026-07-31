@@ -81,7 +81,7 @@ def sonuc_sayfa(request: Request, payment_id: int,
     payment = _payment_getir(db, payment_id, user)
     if payment is None:
         return RedirectResponse("/yukle", status_code=303)
-    if payment.durum == "baslatildi":  # yarım kalmış ödeme
+    if payment.durum in ("baslatildi", "isleniyor"):  # yarım kalmış ödeme
         return RedirectResponse(f"/yukle/{payment_id}/pos", status_code=303)
     price = get_meal_price(db)
     return templates.TemplateResponse(request, "app/odeme_sonuc.html", {

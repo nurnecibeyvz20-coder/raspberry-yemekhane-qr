@@ -1,6 +1,7 @@
 from decimal import Decimal
 from uuid import uuid4
 
+from sqlalchemy import update as sa_update
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -31,8 +32,28 @@ def tamamla(db: Session, payment_id: int, kart_no: str) -> Payment:
     if payment.durum != "baslatildi":
         return payment  # idempotent: sağlayıcı çağrılmaz, bakiye değişmez
 
-    provider = get_payment_provider()
-    sonuc = provider.dogrula(kart_no, payment.tutar, payment.saglayici_ref)
+    # Atomik claim: yarışan isteklerden yalnız biri satırı 'isleniyor' yapar.
+    claimed = db.execute(
+        sa_update(Payment)
+        .where(Payment.id == payment_id, Payment.durum == "baslatildi")
+        .values(durum="isleniyor")
+    ).rowcount
+    db.commit()
+    if claimed == 0:
+        db.refresh(payment)
+        return payment  # başka istek kazandı ya da zaten bitti
+
+    db.refresh(payment)
+    try:
+        provider = get_payment_provider()
+        sonuc = provider.dogrula(kart_no, payment.tutar,
+                                 payment.saglayici_ref)
+    except Exception:
+        # Sağlayıcı hatası: claim'i geri al, ödeme tekrar denenebilir kalsın.
+        db.rollback()
+        payment.durum = "baslatildi"
+        db.commit()
+        raise
 
     if sonuc.basarili:
         user = db.get(User, payment.user_id)

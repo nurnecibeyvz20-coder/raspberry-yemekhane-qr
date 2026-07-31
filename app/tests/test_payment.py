@@ -100,6 +100,70 @@ def test_tamamla_idempotent(db_session):
     assert db_session.query(Transaction).count() == 1
 
 
+def _db_durum(db, payment_id):
+    """Identity map'i atlayarak DB'deki güncel durumu okur."""
+    return (db.query(Payment.durum)
+              .filter(Payment.id == payment_id).scalar())
+
+
+def test_tamamla_claim_alinir(db_session, monkeypatch):
+    # Sağlayıcı çağrıldığı ANDA claim commit edilmiş olmalı ('isleniyor'):
+    # yarışan ikinci istek koşullu UPDATE'te 0 satır görür.
+    gorulen = []
+
+    class GozetleyenPos:
+        def dogrula(self, kart_no, tutar, ref):
+            gorulen.append(_db_durum(db_session, p.id))
+            from app.providers.payment import OdemeSonucu
+            return OdemeSonucu(True, ref, "Onaylandı")
+
+    monkeypatch.setattr("app.services.payment_flow.get_payment_provider",
+                        lambda: GozetleyenPos())
+    user = make_user(db_session, balance="100.00")
+    p = payment_flow.baslat(db_session, user, Decimal("200"))
+    payment_flow.tamamla(db_session, p.id, "4242424242424242")
+    assert gorulen == ["isleniyor"]
+    assert _db_durum(db_session, p.id) == "basarili"
+    db_session.refresh(user)
+    assert user.balance == Decimal("300.00")
+
+
+def test_tamamla_claim_yarisi(db_session):
+    # Yarış simülasyonu: başka bir istek claim'i almış gibi durum='isleniyor'
+    from sqlalchemy import update
+    user = make_user(db_session, balance="100.00")
+    p = payment_flow.baslat(db_session, user, Decimal("200"))
+    db_session.execute(update(Payment).where(Payment.id == p.id)
+                       .values(durum="isleniyor"))
+    db_session.commit()
+    sonuc = payment_flow.tamamla(db_session, p.id, "4242424242424242")
+    assert sonuc.durum == "isleniyor"
+    db_session.refresh(user)
+    assert user.balance == Decimal("100.00")
+    assert db_session.query(Transaction).count() == 0
+
+
+def test_tamamla_provider_hatasi_geri_alir(db_session, monkeypatch):
+    gorulen = []
+
+    class PatlayanPos:
+        def dogrula(self, kart_no, tutar, ref):
+            gorulen.append(_db_durum(db_session, p.id))
+            raise RuntimeError("saglayici koptu")
+
+    monkeypatch.setattr("app.services.payment_flow.get_payment_provider",
+                        lambda: PatlayanPos())
+    user = make_user(db_session, balance="100.00")
+    p = payment_flow.baslat(db_session, user, Decimal("200"))
+    with pytest.raises(RuntimeError):
+        payment_flow.tamamla(db_session, p.id, "4242424242424242")
+    assert gorulen == ["isleniyor"]  # hata anında claim alınmıştı
+    assert _db_durum(db_session, p.id) == "baslatildi"  # geri alındı
+    db_session.refresh(user)
+    assert user.balance == Decimal("100.00")
+    assert db_session.query(Transaction).count() == 0
+
+
 # --- red kartı ---
 
 def test_yukleme_red_karti(client, seeded_db):
