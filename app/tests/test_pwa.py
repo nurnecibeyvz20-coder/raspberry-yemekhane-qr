@@ -12,9 +12,11 @@ def test_manifest_served(client):
     assert data["name"] == "Karatay Yemekhane"
     assert data["start_url"] == "/qr"
 
-def test_sw_served(client):
-    r = client.get("/static/sw.js")
+def test_sw_served_from_root(client):
+    # Kök kapsam için sw.js /sw.js'den servis edilmeli (/static değil)
+    r = client.get("/sw.js")
     assert r.status_code == 200
+    assert "javascript" in r.headers["content-type"]
 
 def test_gecmis_requires_login(client, seeded_db):
     r = client.get("/gecmis", follow_redirects=False)

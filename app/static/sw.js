@@ -32,10 +32,12 @@ self.addEventListener('fetch', function (event) {
             caches.match(event.request).then(function (hit) {
                 if (hit) return hit;
                 return fetch(event.request).then(function (resp) {
-                    const kopya = resp.clone();
-                    caches.open(CACHE_V).then(function (cache) {
-                        cache.put(event.request, kopya);
-                    });
+                    if (resp.ok) {
+                        const kopya = resp.clone();
+                        caches.open(CACHE_V).then(function (cache) {
+                            cache.put(event.request, kopya);
+                        });
+                    }
                     return resp;
                 });
             })
@@ -47,6 +49,7 @@ self.addEventListener('fetch', function (event) {
         fetch(event.request).catch(function (err) {
             if (event.request.mode === 'navigate') {
                 return new Response('<h1>Bağlantı yok</h1>', {
+                    status: 503,
                     headers: { 'Content-Type': 'text/html; charset=utf-8' },
                 });
             }
