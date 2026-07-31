@@ -52,6 +52,17 @@ def test_qr_token_api_reports_ate_today(client, seeded_db):
     r = client.get("/api/qr-token")
     assert r.json()["ate_today"] is True
 
+def test_change_password_rejects_short(client, seeded_db):
+    login(client)
+    r = client.post("/change-password",
+                    data={"old_password": "dogru123",
+                          "new_password": "kisa5"},
+                    follow_redirects=False)
+    assert r.status_code == 200
+    assert "Şifre en az 8 karakter olmalı" in r.text
+    client.post("/logout")
+    assert login(client).status_code == 303  # şifre değişmedi
+
 def test_change_password(client, seeded_db):
     login(client)
     r = client.post("/change-password",

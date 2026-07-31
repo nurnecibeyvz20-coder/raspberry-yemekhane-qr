@@ -68,6 +68,10 @@ def change_password(request: Request,
         return templates.TemplateResponse(
             request, "change_password.html",
             {"user": user, "error": "Eski şifre hatalı"})
+    if len(new_password) < 8:
+        return templates.TemplateResponse(
+            request, "change_password.html",
+            {"user": user, "error": "Şifre en az 8 karakter olmalı"})
     user.password_hash = hash_password(new_password)
     user.session_version += 1
     db.commit()

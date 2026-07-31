@@ -69,6 +69,17 @@ def test_must_change_password_locks_pages(client, seeded_db):
     assert r.status_code == 303
     assert r.headers["location"] == "/sifre-degistir-zorunlu"
 
+def test_forced_change_rejected_when_not_locked(client, seeded_db):
+    login(client)  # must_change_password=False
+    r = client.post("/sifre-degistir-zorunlu",
+                    data={"new_password": "korsan123"},
+                    follow_redirects=False)
+    assert r.status_code == 303
+    assert r.headers["location"] == "/qr"
+    client.post("/logout")
+    # şifre DEĞİŞMEDİ: eski şifreyle giriş hâlâ çalışır
+    assert login(client).status_code == 303
+
 def test_forced_change_unlocks(client, seeded_db):
     from app.db import get_db
     from app.main import app

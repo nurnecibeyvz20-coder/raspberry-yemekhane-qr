@@ -54,6 +54,8 @@ def login(request: Request,
 @router.get("/sifre-degistir-zorunlu", response_class=HTMLResponse)
 def forced_password_page(request: Request,
                          user: User = Depends(current_user)):
+    if not user.must_change_password:
+        return RedirectResponse("/qr", status_code=303)
     return templates.TemplateResponse(request, "zorunlu_sifre.html",
                                       {"user": user, "error": None})
 
@@ -62,6 +64,8 @@ def forced_password_change(request: Request,
                            new_password: str = Form(...),
                            user: User = Depends(current_user),
                            db: Session = Depends(get_db)):
+    if not user.must_change_password:
+        return RedirectResponse("/qr", status_code=303)
     if len(new_password) < 8:
         return templates.TemplateResponse(
             request, "zorunlu_sifre.html",
