@@ -151,6 +151,50 @@ def test_statesiz_yeni_post_basa_doner(client, flow_db):
     assert verify_password("eski1234", user.password_hash)  # şifre değişmedi
 
 
+def test_yeni_state_tekrar_kullanilamaz(client, flow_db):
+    """Başarılı sıfırlama sonrası yakalanan asama=yeni çerezi ikinci bir
+    şifre sıfırlamaya izin vermemeli (session_version bağlaması)."""
+    user = _kullanici(flow_db, telefon="05321234512")
+    client.post("/sifremi-unuttum", data={"sicil_no": "7001"})
+    client.post("/sifremi-unuttum/yontem", data={"kanal": "sms"})
+    satir = (flow_db.query(ResetCode).filter_by(user_id=user.id)
+             .order_by(ResetCode.id.desc()).first())
+    client.post("/sifremi-unuttum/kod", data={"kod": satir.demo_gosterim})
+
+    # /yeni POST'undan ÖNCE state çerezini yakala
+    yakalanan = client.cookies.get("reset_state")
+    assert yakalanan
+
+    r = client.post("/sifremi-unuttum/yeni",
+                    data={"new_password": "birinci123"},
+                    follow_redirects=False)
+    assert r.status_code == 303
+    assert r.headers["location"] == "/login"
+
+    # Yakalanan çerezle tekrar dene → başa dönmeli
+    client.cookies.set("reset_state", yakalanan)
+    r = client.post("/sifremi-unuttum/yeni",
+                    data={"new_password": "ikinci1234"},
+                    follow_redirects=False)
+    assert r.status_code == 303
+    assert r.headers["location"] == "/sifremi-unuttum"
+
+    flow_db.expire_all()
+    user = flow_db.query(User).filter_by(sicil_no="7001").one()
+    assert verify_password("birinci123", user.password_hash)
+    assert not verify_password("ikinci1234", user.password_hash)
+
+
+def test_sicil_post_hiz_siniri(client, flow_db):
+    """POST /sifremi-unuttum IP başına sınırlı: 11. istek 429."""
+    for _ in range(10):
+        r = client.post("/sifremi-unuttum", data={"sicil_no": "yok"})
+        assert r.status_code == 200
+    r = client.post("/sifremi-unuttum", data={"sicil_no": "yok"})
+    assert r.status_code == 429
+    assert "Çok fazla deneme" in r.text
+
+
 def test_gecersiz_kanal_kod_uretmez(client, flow_db):
     """Sadece telefonu olan kullanıcı için kanal=eposta enjekte edilirse
     kod üretilmemeli (Task 4 taşıması: servis doğrulama yapmıyor)."""

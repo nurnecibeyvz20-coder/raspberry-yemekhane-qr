@@ -4,8 +4,9 @@ from itsdangerous import BadSignature, SignatureExpired, TimestampSigner
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth import (current_user, create_session_cookie, hash_password,
-                      login_limiter, session_age_for, verify_password)
+from app.auth import (RateLimiter, current_user, create_session_cookie,
+                      hash_password, login_limiter, session_age_for,
+                      verify_password)
 from app.config import settings
 from app.db import get_db
 from app.deps import templates
@@ -18,27 +19,34 @@ router = APIRouter()
 # --- Şifremi unuttum akış durumu (imzalı kısa ömürlü çerez) ---
 RESET_STATE_OMRU = 900  # 15 dk
 _reset_signer = TimestampSigner(settings.secret_key, salt="reset-state")
+unuttum_limiter = RateLimiter(limit=10, window=60)
 
-def _reset_state_yaz(response: Response, user_id: int,
+def _reset_state_yaz(response: Response, user: User,
                      asama: str, kanal: str = "") -> None:
-    value = _reset_signer.sign(f"{user_id}:{asama}:{kanal}").decode()
+    # session_version bağlanır: sifre_sifirla sürümü artırdığından
+    # başarılı sıfırlama tüm açık state çerezlerini geçersiz kılar.
+    value = _reset_signer.sign(
+        f"{user.id}:{asama}:{kanal}:{user.session_version}").decode()
     response.set_cookie("reset_state", value, max_age=RESET_STATE_OMRU,
                         httponly=True, samesite="lax")
 
-def _reset_state_oku(request: Request) -> tuple[int, str, str] | None:
+def _reset_state_oku(request: Request) -> tuple[int, str, str, int] | None:
     raw = request.cookies.get("reset_state")
     if not raw:
         return None
     try:
         data = _reset_signer.unsign(raw, max_age=RESET_STATE_OMRU).decode()
-        uid, asama, kanal = data.split(":", 2)
-        return int(uid), asama, kanal
+        uid, asama, kanal, surum = data.split(":", 3)
+        return int(uid), asama, kanal, int(surum)
     except (BadSignature, SignatureExpired, ValueError):
         return None
 
-def _reset_user(db: Session, user_id: int) -> User | None:
-    user = db.get(User, user_id)
+def _reset_user(db: Session,
+                durum: tuple[int, str, str, int]) -> User | None:
+    user = db.get(User, durum[0])
     if user is None or not user.is_active:
+        return None
+    if user.session_version != durum[3]:  # sürüm eski → state geçersiz
         return None
     return user
 
@@ -139,6 +147,13 @@ def unuttum_sicil(request: Request):
 def unuttum_sicil_post(request: Request,
                        sicil_no: str = Form(...),
                        db: Session = Depends(get_db)):
+    client_ip = request.client.host if request.client else "unknown"
+    if not unuttum_limiter.allow(client_ip):
+        return templates.TemplateResponse(
+            request, "app/unuttum_sicil.html",
+            {"error": "Çok fazla deneme"},
+            status_code=429,
+        )
     user = db.execute(
         select(User).where(User.sicil_no == sicil_no,
                            User.is_active.is_(True))
@@ -150,7 +165,7 @@ def unuttum_sicil_post(request: Request,
             request, "app/unuttum_yontem.html", {"yontemler": []})
     resp = templates.TemplateResponse(
         request, "app/unuttum_yontem.html", {"yontemler": yontemler})
-    _reset_state_yaz(resp, user.id, "yontem")
+    _reset_state_yaz(resp, user, "yontem")
     return resp
 
 @router.post("/sifremi-unuttum/yontem")
@@ -160,7 +175,7 @@ def unuttum_yontem_post(request: Request,
     durum = _reset_state_oku(request)
     if durum is None or durum[1] not in ("yontem", "dogrulama"):
         return _basa_don()
-    user = _reset_user(db, durum[0])
+    user = _reset_user(db, durum)
     if user is None:
         return _basa_don()
 
@@ -173,7 +188,7 @@ def unuttum_yontem_post(request: Request,
         resp = templates.TemplateResponse(
             request, "app/unuttum_soru.html",
             {"soru": secili["soru"], "error": None})
-        _reset_state_yaz(resp, user.id, "dogrulama", "gizli_soru")
+        _reset_state_yaz(resp, user, "dogrulama", "gizli_soru")
         return resp
 
     kod = reset.kod_talep(db, user, kanal)
@@ -182,13 +197,13 @@ def unuttum_yontem_post(request: Request,
             request, "app/unuttum_yontem.html",
             {"yontemler": yontemler,
              "error": "Çok fazla deneme, daha sonra tekrar deneyin"})
-        _reset_state_yaz(resp, user.id, "yontem")
+        _reset_state_yaz(resp, user, "yontem")
         return resp
 
     resp = templates.TemplateResponse(
         request, "app/unuttum_kod.html",
         {"maske": secili["maske"], "kanal": kanal, "error": None})
-    _reset_state_yaz(resp, user.id, "dogrulama", kanal)
+    _reset_state_yaz(resp, user, "dogrulama", kanal)
     return resp
 
 @router.post("/sifremi-unuttum/kod")
@@ -199,7 +214,7 @@ def unuttum_kod_post(request: Request,
     if durum is None or durum[1] != "dogrulama" \
             or durum[2] not in ("sms", "eposta"):
         return _basa_don()
-    user = _reset_user(db, durum[0])
+    user = _reset_user(db, durum)
     if user is None:
         return _basa_don()
 
@@ -214,7 +229,7 @@ def unuttum_kod_post(request: Request,
 
     resp = templates.TemplateResponse(
         request, "app/unuttum_yeni.html", {"error": None})
-    _reset_state_yaz(resp, user.id, "yeni")
+    _reset_state_yaz(resp, user, "yeni")
     return resp
 
 @router.post("/sifremi-unuttum/soru")
@@ -224,7 +239,7 @@ def unuttum_soru_post(request: Request,
     durum = _reset_state_oku(request)
     if durum is None or durum[1] != "dogrulama" or durum[2] != "gizli_soru":
         return _basa_don()
-    user = _reset_user(db, durum[0])
+    user = _reset_user(db, durum)
     if user is None:
         return _basa_don()
 
@@ -235,7 +250,7 @@ def unuttum_soru_post(request: Request,
 
     resp = templates.TemplateResponse(
         request, "app/unuttum_yeni.html", {"error": None})
-    _reset_state_yaz(resp, user.id, "yeni")
+    _reset_state_yaz(resp, user, "yeni")
     return resp
 
 @router.post("/sifremi-unuttum/yeni")
@@ -245,7 +260,7 @@ def unuttum_yeni_post(request: Request,
     durum = _reset_state_oku(request)
     if durum is None or durum[1] != "yeni":
         return _basa_don()
-    user = _reset_user(db, durum[0])
+    user = _reset_user(db, durum)
     if user is None:
         return _basa_don()
 

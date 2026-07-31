@@ -21,9 +21,12 @@ def _servis_saati_serbest(request, monkeypatch):
 @pytest.fixture(autouse=True)
 def _reset_login_limiter():
     from app.auth import login_limiter
+    from app.routers.auth_routes import unuttum_limiter
     login_limiter.hits.clear()
+    unuttum_limiter.hits.clear()
     yield
     login_limiter.hits.clear()
+    unuttum_limiter.hits.clear()
 
 @pytest.fixture
 def client():
