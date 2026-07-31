@@ -64,6 +64,26 @@
     </table>
   </div>
   <div class="kart">
+    <h2 class="baslik">Bekleyen Doğrulama Kodları</h2>
+    <table class="tablo">
+      <thead>
+        <tr><th>Kişi</th><th>Kanal</th><th>Kod</th><th>Ne Zaman</th></tr>
+      </thead>
+      <tbody>
+        {% for k in stats.bekleyen_kodlar %}
+        <tr>
+          <td>{{ k.ad_soyad }}</td>
+          <td><span class="rozet rozet-gri">{{ "SMS" if k.kanal == "sms" else "E-posta" }}</span></td>
+          <td><span style="font-family: ui-monospace, monospace; font-size: 20px; font-weight: 700; letter-spacing: 2px;">{{ k.kod }}</span></td>
+          <td class="soluk">{{ k.dk_once }} dk önce</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="soluk">Bekleyen kod yok</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="kart">
     <h2 class="baslik">Son Başarısız Okutmalar</h2>
     <table class="tablo">
       <thead>

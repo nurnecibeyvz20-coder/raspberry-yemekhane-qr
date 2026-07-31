@@ -13,6 +13,7 @@ from app.deps import templates
 from app.flash import get_flash, set_flash
 from app.models import MealEntry, Setting, Transaction, User
 from app.services.checkin import get_meal_price, get_service_hours
+from app.services.reset import normalize as reset_normalize
 from app.services.stats import dashboard_stats, paginate
 
 router = APIRouter(dependencies=[Depends(require_admin)])
@@ -98,11 +99,28 @@ def create_user(sicil_no: str = Form(...),
                 ad_soyad: str = Form(...),
                 password: str = Form(...),
                 role: str = Form(...),
+                telefon: str = Form(""),
+                eposta: str = Form(""),
+                gizli_soru: str = Form(""),
+                gizli_cevap: str = Form(""),
                 db: Session = Depends(get_db)):
     if role not in ROLES:
         raise HTTPException(400, "Geçersiz rol")
+    # Gizli soru yalnız cevabıyla birlikte anlamlı: ikisi de doluysa
+    # kaydedilir, aksi halde ikisi de boş bırakılır (hata verilmez).
+    soru = gizli_soru.strip()
+    cevap = gizli_cevap.strip()
+    if soru and cevap:
+        soru_kayit = soru
+        cevap_hash = hash_password(reset_normalize(cevap))
+    else:
+        soru_kayit = cevap_hash = None
     user = User(sicil_no=sicil_no.strip(), ad_soyad=ad_soyad.strip(),
-                role=role, password_hash=hash_password(password))
+                role=role, password_hash=hash_password(password),
+                telefon=telefon.strip() or None,
+                eposta=eposta.strip() or None,
+                gizli_soru=soru_kayit,
+                gizli_cevap_hash=cevap_hash)
     db.add(user)
     try:
         db.commit()

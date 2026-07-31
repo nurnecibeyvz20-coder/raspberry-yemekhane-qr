@@ -11,6 +11,11 @@
         <span class="rozet {{ '' if user.role == 'admin' else 'rozet-gri' }}">{{ user.role }}</span>
         <span class="rozet {{ '' if user.is_active else 'rozet-gri' }}">{{ "Aktif" if user.is_active else "Pasif" }}</span>
       </div>
+      <div class="soluk ust-bosluk" style="font-size: 13px;">
+        Telefon: {{ "VAR" if user.telefon else "YOK" }} ▪
+        E-posta: {{ "VAR" if user.eposta else "YOK" }} ▪
+        Gizli Soru: {{ "TANIMLI" if user.gizli_soru and user.gizli_cevap_hash else "YOK" }}
+      </div>
     </div>
     <div style="text-align:right;">
       <div style="font-size: 32px; font-weight: 700; color: var(--k-birincil);">{{ user.balance }} TL</div>
@@ -32,6 +37,7 @@
         <input class="alan" id="new_password" type="password" name="new_password" required style="max-width: 160px;">
         <button class="btn btn-ikincil" type="submit">Değiştir</button>
       </div>
+      <div class="soluk" style="font-size: 12px; margin-top: 4px;">Personel ilk girişte yeni şifre belirlemek zorunda kalır.</div>
     </form>
     <form method="post" action="/admin/users/{{ user.id }}/toggle-active">
       <button class="btn {{ 'btn-tehlike' if user.is_active else 'btn-ikincil' }}" type="submit">

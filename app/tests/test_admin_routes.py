@@ -179,6 +179,51 @@ def test_islemler_page_filters_by_type(client, admin_db):
     assert "yukleme" in r.text.lower() or "Yükleme" in r.text
     assert "-125" not in r.text
 
+def test_dashboard_shows_pending_reset_code(client, admin_db):
+    from app.services import reset
+    login_admin(client, admin_db)
+    u = User(sicil_no="5001", ad_soyad="Kodlu Kişi", role="personel",
+             password_hash="x", telefon="05551234567")
+    admin_db.add(u); admin_db.commit()
+    kod = reset.kod_talep(admin_db, u, "sms")
+    assert kod is not None
+    r = client.get("/admin")
+    assert r.status_code == 200
+    assert kod in r.text
+    assert "Kodlu Kişi" in r.text
+
+def test_create_user_with_recovery(client, admin_db):
+    from app.services import reset
+    login_admin(client, admin_db)
+    r = client.post("/admin/users/new",
+                    data={"sicil_no": "5002", "ad_soyad": "Kurtarmalı",
+                          "password": "sifre123", "role": "personel",
+                          "telefon": "05559876543",
+                          "eposta": "k@ornek.com",
+                          "gizli_soru": "İlk evcil hayvanınızın adı?",
+                          "gizli_cevap": "Boncuk"},
+                    follow_redirects=False)
+    assert r.status_code == 303
+    u = admin_db.query(User).filter_by(sicil_no="5002").one()
+    assert u.telefon == "05559876543"
+    assert u.eposta == "k@ornek.com"
+    assert u.gizli_soru == "İlk evcil hayvanınızın adı?"
+    assert u.gizli_cevap_hash and u.gizli_cevap_hash != "Boncuk"
+    assert reset.gizli_dogrula(u, "Boncuk") is True
+
+def test_create_user_soru_without_cevap_ignored(client, admin_db):
+    login_admin(client, admin_db)
+    r = client.post("/admin/users/new",
+                    data={"sicil_no": "5003", "ad_soyad": "Yarım Soru",
+                          "password": "sifre123", "role": "personel",
+                          "gizli_soru": "Bir soru?",
+                          "gizli_cevap": ""},
+                    follow_redirects=False)
+    assert r.status_code == 303
+    u = admin_db.query(User).filter_by(sicil_no="5003").one()
+    assert u.gizli_soru is None
+    assert u.gizli_cevap_hash is None
+
 def test_load_balance_sets_flash_cookie(client, admin_db):
     login_admin(client, admin_db)
     u = User(sicil_no="f2", ad_soyad="Flaslı", role="personel",

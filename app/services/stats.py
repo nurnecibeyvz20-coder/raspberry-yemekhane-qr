@@ -1,10 +1,11 @@
 import math
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from app.models import User, Transaction, MealEntry, FailedAttempt
+from app.models import (User, Transaction, MealEntry, FailedAttempt,
+                        ResetCode)
 
 @dataclass
 class Page:
@@ -44,6 +45,27 @@ def dashboard_stats(db: Session) -> dict:
                      .order_by(FailedAttempt.created_at.desc(),
                                FailedAttempt.id.desc())
                      .limit(5).all())
+    # bekleyen_kodlar: son 15 dk icinde olusturulmus, kullanilmamis ve
+    # demo_gosterim dolu kodlar (yeniden eskiye, en fazla 10). Her oge:
+    # {"ad_soyad": str, "kanal": str, "kod": str, "dk_once": int}
+    simdi = datetime.now()
+    esik = simdi - timedelta(minutes=15)
+    kod_satirlari = (db.query(ResetCode, User)
+                       .join(User, ResetCode.user_id == User.id)
+                       .filter(ResetCode.used.is_(False),
+                               ResetCode.demo_gosterim.isnot(None),
+                               ResetCode.created_at >= esik)
+                       .order_by(ResetCode.created_at.desc(),
+                                 ResetCode.id.desc())
+                       .limit(10).all())
+    bekleyen_kodlar = [
+        {"ad_soyad": u.ad_soyad,
+         "kanal": rc.kanal,
+         "kod": rc.demo_gosterim,
+         "dk_once": max(0, int((simdi - rc.created_at)
+                               .total_seconds() // 60))}
+        for rc, u in kod_satirlari
+    ]
     return {
         "bugun_yiyen": int(bugun_yiyen),
         "aktif_personel": int(aktif_personel),
@@ -52,4 +74,5 @@ def dashboard_stats(db: Session) -> dict:
         "bugun_yuklenen": Decimal(bugun_yuklenen),
         "son_islemler": son_islemler,
         "son_hatalar": son_hatalar,
+        "bekleyen_kodlar": bekleyen_kodlar,
     }
