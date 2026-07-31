@@ -9,5 +9,8 @@ class Settings(BaseSettings):
     personel_session_age: int = 2592000  # 30 gün
     admin_session_age: int = 43200       # 12 saat
     qr_token_ttl: int = 60         # saniye
+    sms_provider: str = "demo"
+    mail_provider: str = "demo"
+    payment_provider: str = "demo"
 
 settings = Settings()
