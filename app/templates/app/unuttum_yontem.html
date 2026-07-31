@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Doğrulama Yöntemi — Karatay Belediyesi Yemekhane{% endblock %}
+{% block content %}
+<div class="sayfa-orta">
+  <div class="kart" style="width: 100%; max-width: 380px; text-align: center;">
+    <img src="/static/logo.jpg" alt="Karatay Belediyesi" style="height: 64px; margin-bottom: 8px;">
+    <h1 class="baslik" style="font-size: 20px;">Şifremi Unuttum</h1>
+    {% if error %}<div class="bant-hata">{{ error }}</div>{% endif %}
+    {% if yontemler %}
+    <p class="soluk" style="margin-top: -8px;">Doğrulama yöntemi seçin</p>
+    {% for y in yontemler %}
+    <form method="post" action="/sifremi-unuttum/yontem" style="margin-bottom: 8px;">
+      <input type="hidden" name="kanal" value="{{ y.kanal }}">
+      {% if y.kanal == 'sms' %}
+      <button class="btn btn-blok" type="submit">SMS ile kod — {{ y.maske }}</button>
+      {% elif y.kanal == 'eposta' %}
+      <button class="btn btn-blok" type="submit">E-posta ile kod — {{ y.maske }}</button>
+      {% else %}
+      <button class="btn btn-blok" type="submit">Gizli soru ile doğrula</button>
+      {% endif %}
+    </form>
+    {% endfor %}
+    {% else %}
+    <div class="bant-uyari">Bu sicil için doğrulama yöntemi bulunamadı. Yöneticinize başvurun.</div>
+    {% endif %}
+    <p class="ust-bosluk"><a href="/login" class="soluk" style="font-size: 14px;">Girişe dön</a></p>
+  </div>
+</div>
+{% endblock %}
