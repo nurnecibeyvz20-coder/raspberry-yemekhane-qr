@@ -1,0 +1,35 @@
+{% extends "app/_shell.html" %}
+{% block title %}Profil{% endblock %}
+{% block govde %}
+<div class="icerik" style="max-width: 420px;">
+  <div class="kart" style="text-align: center;">
+    <div style="font-size: 20px; font-weight: 700; color: var(--k-birincil);">{{ user.ad_soyad }}</div>
+    <div class="soluk">Sicil No: {{ user.sicil_no }}</div>
+    <a class="btn btn-ikincil ust-bosluk" href="/change-password" style="display:inline-block;">Şifre değiştir</a>
+  </div>
+  <div class="kart ust-bosluk">
+    <h2 class="baslik" style="font-size: 18px;">Kurtarma Bilgileri</h2>
+    <p class="soluk" style="font-size: 13px; margin-top: -8px;">Şifrenizi unutursanız bu bilgilerle sıfırlayabilirsiniz.</p>
+    {% if error %}<div class="bant-hata">{{ error }}</div>{% endif %}
+    <form method="post" action="/profil/kurtarma">
+      <label class="alan-etiket" for="telefon">Telefon</label>
+      <input class="alan" type="tel" id="telefon" name="telefon"
+             value="{{ user.telefon or '' }}" placeholder="05xx xxx xx xx">
+      <label class="alan-etiket" for="eposta">E-posta</label>
+      <input class="alan" type="email" id="eposta" name="eposta"
+             value="{{ user.eposta or '' }}" placeholder="ornek@karatay.bel.tr">
+      <label class="alan-etiket" for="gizli_soru">Gizli soru</label>
+      <input class="alan" type="text" id="gizli_soru" name="gizli_soru"
+             value="{{ user.gizli_soru or '' }}" placeholder="Örn. İlk okulunuzun adı?">
+      <label class="alan-etiket" for="gizli_cevap">Gizli cevap {% if user.gizli_cevap_hash %}(değiştirmek istemiyorsanız boş bırakın){% endif %}</label>
+      <input class="alan" type="text" id="gizli_cevap" name="gizli_cevap" autocomplete="off">
+      <label class="alan-etiket" for="mevcut_sifre">Mevcut şifreniz (onay için)</label>
+      <input class="alan" type="password" id="mevcut_sifre" name="mevcut_sifre" required autocomplete="current-password">
+      <button class="btn btn-blok ust-bosluk" type="submit">Kaydet</button>
+    </form>
+  </div>
+  <form method="post" action="/logout" class="ust-bosluk">
+    <button class="btn btn-tehlike btn-blok" type="submit">Çıkış yap</button>
+  </form>
+</div>
+{% endblock %}

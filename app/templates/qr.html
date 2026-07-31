@@ -1,20 +1,6 @@
-{% extends "base.html" %}
+{% extends "app/_shell.html" %}
 {% block title %}QR Kodum{% endblock %}
-{% block topbar %}
-<div class="topbar">
-  <div class="topbar-marka">
-    <img src="/static/logo.jpg" alt="Karatay Belediyesi">
-    <div><div class="ad">Karatay Belediyesi</div><div class="alt">Yemekhane</div></div>
-  </div>
-  <div class="topbar-sag">
-    <span class="kullanici">{{ user.ad_soyad }}</span>
-    <form method="post" action="/logout" style="margin:0">
-      <button class="btn btn-ikincil" type="submit">Çıkış</button>
-    </form>
-  </div>
-</div>
-{% endblock %}
-{% block content %}
+{% block govde %}
 <div class="icerik" style="max-width: 420px;">
   <div id="low-band" class="bant-hata" style="display: {{ 'block' if low_balance else 'none' }}; text-align:center;">Bakiyeniz yetersiz</div>
   <div class="kart" style="text-align: center;">
@@ -30,30 +16,6 @@
     <div id="balance" style="font-size: 32px; font-weight: 700; color: var(--k-birincil); margin-top: 16px;">{{ user.balance }} TL</div>
     <div class="soluk">Bakiyeniz</div>
     <div class="ust-bosluk"><span class="rozet">≈ {{ ogun_sayisi }} öğün</span></div>
-    <a class="soluk" href="/change-password" style="font-size: 13px; display:inline-block; margin-top: 16px;">Şifre değiştir</a>
-  </div>
-  <div class="kart ust-bosluk">
-    <h2>Geçmişim</h2>
-    {% if gecmis %}
-    {% set tur_adlari = {"yukleme": "Yükleme", "yemek": "Yemek", "duzeltme": "Düzeltme"} %}
-    <table class="tablo">
-      <thead>
-        <tr><th>Tarih</th><th>Tür</th><th>Tutar</th><th>Bakiye</th></tr>
-      </thead>
-      <tbody>
-        {% for t in gecmis %}
-        <tr>
-          <td>{{ t.created_at.strftime("%d.%m %H:%M") }}</td>
-          <td><span class="rozet {{ '' if t.type == 'yukleme' else 'rozet-gri' }}">{{ tur_adlari.get(t.type, t.type) }}</span></td>
-          <td class="{{ 'tutar-arti' if t.amount > 0 else 'tutar-eksi' }}">{{ "+" if t.amount > 0 }}{{ t.amount }}</td>
-          <td class="soluk">{{ t.balance_after }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <div class="soluk">Henüz işlem yok</div>
-    {% endif %}
   </div>
 </div>
 <script src="/static/qrcode.min.js"></script>

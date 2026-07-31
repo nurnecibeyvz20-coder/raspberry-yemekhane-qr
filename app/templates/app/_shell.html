@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block pwa %}
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#205c42">
+<link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js');
+}
+</script>
+{% endblock %}
+{% block content %}
+<div class="icerik-alt-bosluk">
+  {% block govde %}{% endblock %}
+</div>
+<nav class="sekme-cubuk">
+  <a href="/qr" class="{{ 'aktif' if aktif_sekme == 'qr' else '' }}"><span class="sekme-ikon">&#127915;</span><span>QR</span></a>
+  <a href="/gecmis" class="{{ 'aktif' if aktif_sekme == 'gecmis' else '' }}"><span class="sekme-ikon">&#128203;</span><span>Geçmiş</span></a>
+  <a href="/yukle" class="{{ 'aktif' if aktif_sekme == 'yukle' else '' }}"><span class="sekme-ikon">&#128179;</span><span>Yükle</span></a>
+  <a href="/profil" class="{{ 'aktif' if aktif_sekme == 'profil' else '' }}"><span class="sekme-ikon">&#128100;</span><span>Profil</span></a>
+</nav>
+{% if flash %}
+<div class="toast toast-{{ flash.tur }}" id="toast">{{ flash.mesaj }}</div>
+<script>setTimeout(() => document.getElementById("toast")?.remove(), 4000);</script>
+{% endif %}
+{% endblock %}

@@ -22,20 +22,10 @@ def test_low_balance_flag(client, seeded_db_low_balance):
     r = client.get("/api/qr-token")
     assert r.json()["low_balance"] is True
 
-def test_qr_page_shows_history_and_meals(client, seeded_db):
-    from app.db import get_db
-    from app.main import app
-    from app.models import Transaction
-    # seeded_db overrides get_db; use the same engine the app sees
-    db = next(app.dependency_overrides[get_db]())
-    db.add(Transaction(user_id=seeded_db, type="yukleme",
-                       amount=Decimal("500.00"),
-                       balance_after=Decimal("500.00")))
-    db.commit()
+def test_qr_page_shows_meals(client, seeded_db):
+    # Geçmiş listesi /gecmis sayfasına taşındı (test_pwa.py)
     login(client)
     r = client.get("/qr")
-    assert "Geçmişim" in r.text
-    assert "+500.00" in r.text
     assert "4 öğün" in r.text   # 500 // 125
 
 def test_qr_token_api_reports_ate_today(client, seeded_db):

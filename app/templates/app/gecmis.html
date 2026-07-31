@@ -1,0 +1,43 @@
+{% extends "app/_shell.html" %}
+{% block title %}Geçmiş{% endblock %}
+{% block govde %}
+<div class="icerik" style="max-width: 420px;">
+  <div class="stat-kartlar" style="grid-template-columns: 1fr 1fr;">
+    <div class="stat-kart">
+      <div>
+        <div class="sayi">{{ ay_ogun }}</div>
+        <div class="etiket">Bu ay yenen öğün</div>
+      </div>
+    </div>
+    <div class="stat-kart">
+      <div>
+        <div class="sayi">{{ ay_yukleme }} TL</div>
+        <div class="etiket">Bu ay yüklenen</div>
+      </div>
+    </div>
+  </div>
+  <div class="kart">
+    <h2 class="baslik" style="font-size: 18px;">Geçmişim</h2>
+    {% if gecmis %}
+    {% set tur_adlari = {"yukleme": "Yükleme", "yemek": "Yemek", "duzeltme": "Düzeltme"} %}
+    <table class="tablo">
+      <thead>
+        <tr><th>Tarih</th><th>Tür</th><th>Tutar</th><th>Bakiye</th></tr>
+      </thead>
+      <tbody>
+        {% for t in gecmis %}
+        <tr>
+          <td>{{ t.created_at.strftime("%d.%m %H:%M") }}</td>
+          <td><span class="rozet {{ '' if t.type == 'yukleme' else 'rozet-gri' }}">{{ tur_adlari.get(t.type, t.type) }}</span></td>
+          <td class="{{ 'tutar-arti' if t.amount > 0 else 'tutar-eksi' }}">{{ "+" if t.amount > 0 }}{{ t.amount }}</td>
+          <td class="soluk">{{ t.balance_after }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="soluk">Henüz işlem yok</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -140,6 +140,23 @@ a { color: var(--k-birincil-acik); }
 .soluk { color: var(--k-metin-soluk); }
 .ust-bosluk { margin-top: var(--k-a3); }
 
+/* ---- Alt sekme cubugu (personel PWA) ---- */
+.sekme-cubuk {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+  display: flex; background: var(--k-beyaz);
+  border-top: 1px solid var(--k-cizgi);
+}
+.sekme-cubuk a {
+  flex: 1; min-height: 44px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+  padding: var(--k-a1) 0; text-decoration: none;
+  color: var(--k-metin-soluk); font-size: 11px;
+}
+.sekme-cubuk a.aktif { color: var(--k-birincil); font-weight: 600; }
+.sekme-cubuk .sekme-ikon { font-size: 20px; line-height: 1; }
+.icerik-alt-bosluk { padding-bottom: 72px; }
+
 /* ---- Admin yerlesimi (sol menu + icerik) ---- */
 .admin-yerlesim {
   display: grid; grid-template-columns: 232px 1fr;
