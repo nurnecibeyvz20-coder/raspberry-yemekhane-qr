@@ -144,7 +144,7 @@ def change_password(request: Request,
     response = RedirectResponse("/qr", status_code=303)
     response.set_cookie(
         "session",
-        create_session_cookie(user.id, user.session_version),
+        create_session_cookie(user.id, user.session_version, user.role),
         max_age=session_age_for(user.role),
         httponly=True,
         samesite="lax",

@@ -54,7 +54,8 @@ def dashboard_stats(db: Session) -> dict:
                        .join(User, ResetCode.user_id == User.id)
                        .filter(ResetCode.used.is_(False),
                                ResetCode.demo_gosterim.isnot(None),
-                               ResetCode.created_at >= esik)
+                               ResetCode.created_at >= esik,
+                               ResetCode.expires_at > simdi)
                        .order_by(ResetCode.created_at.desc(),
                                  ResetCode.id.desc())
                        .limit(10).all())

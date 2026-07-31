@@ -33,6 +33,21 @@ def test_create_user(client, admin_db):
     u = admin_db.query(User).filter_by(sicil_no="3001").one()
     assert u.ad_soyad == "Yeni Kişi"
 
+def test_create_user_must_change_password(client, admin_db):
+    login_admin(client, admin_db)
+    client.post("/admin/users/new",
+                data={"sicil_no": "3010", "ad_soyad": "Zorunlu Kişi",
+                      "password": "sifre123", "role": "personel"})
+    u = admin_db.query(User).filter_by(sicil_no="3010").one()
+    assert u.must_change_password is True
+    # Yeni personel ilk girişte şifre değiştirmeye zorlanır
+    client.post("/logout")
+    client.post("/login", data={"sicil_no": "3010",
+                "password": "sifre123"})
+    r = client.get("/qr", follow_redirects=False)
+    assert r.status_code == 303
+    assert r.headers["location"] == "/sifre-degistir-zorunlu"
+
 def test_create_user_duplicate(client, admin_db):
     login_admin(client, admin_db)
     client.post("/admin/users/new",

@@ -217,6 +217,25 @@ def test_baskasinin_odemesine_erisim(client, seeded_db):
     assert r.headers["location"] == "/yukle"
 
 
+# --- kabuk / sekme çubuğu ---
+
+def test_yukle_sayfalari_sekme_cubugu_icerir(client, seeded_db):
+    login(client)
+    r = client.get("/yukle")
+    assert 'class="sekme-cubuk"' in r.text
+    assert 'href="/yukle" class="aktif"' in r.text
+
+    r = client.post("/yukle", data={"tutar": "500"}, follow_redirects=False)
+    pos_url = r.headers["location"]
+    r = client.get(pos_url)
+    assert 'class="sekme-cubuk"' in r.text
+
+    r = client.post(pos_url, data={"kart_no": "4242 4242 4242 4242"},
+                    follow_redirects=False)
+    r = client.get(r.headers["location"])
+    assert 'class="sekme-cubuk"' in r.text
+
+
 # --- dashboard bugun_yuklenen ---
 
 def test_dashboard_bugun_yuklenen(db_session):

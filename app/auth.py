@@ -17,15 +17,24 @@ def hash_password(plain: str) -> str:
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd.verify(plain, hashed)
 
-def create_session_cookie(user_id: int, session_version: int) -> str:
-    return _signer.sign(f"{user_id}:{session_version}").decode()
+def create_session_cookie(user_id: int, session_version: int,
+                          role: str) -> str:
+    # Rol işareti ('p'/'a') imzalı değere gömülür: admin çerezinin 12
+    # saatlik ömrü sunucu tarafında da denetlenebilsin diye.
+    return _signer.sign(
+        f"{user_id}:{session_version}:{role[0]}").decode()
 
 def read_session_cookie(value: str) -> tuple[int, int] | None:
     try:
-        raw = _signer.unsign(value, max_age=settings.session_max_age).decode()
-        uid, _, ver = raw.partition(":")
-        if not ver:  # eski format (sürümsüz) çerezler geçersiz
+        raw = _signer.unsign(
+            value, max_age=settings.personel_session_age).decode()
+        parcalar = raw.split(":")
+        if len(parcalar) != 3:  # eski format (rol işaretsiz) geçersiz
             return None
+        uid, ver, rol = parcalar
+        if rol == "a":
+            # Admin çerezi ek tazelik denetiminden geçer (12 saat).
+            _signer.unsign(value, max_age=settings.admin_session_age)
         return int(uid), int(ver)
     except (BadSignature, SignatureExpired, ValueError):
         return None

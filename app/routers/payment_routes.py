@@ -20,7 +20,8 @@ def _yukle_sayfasi(request: Request, user: User, error: str | None = None,
                    status_code: int = 200):
     return templates.TemplateResponse(
         request, "app/odeme_tutar.html",
-        {"user": user, "hizli_tutarlar": HIZLI_TUTARLAR, "error": error},
+        {"user": user, "hizli_tutarlar": HIZLI_TUTARLAR, "error": error,
+         "aktif_sekme": "yukle"},
         status_code=status_code)
 
 
@@ -59,7 +60,8 @@ def pos_sayfa(request: Request, payment_id: int,
     if payment is None or payment.durum != "baslatildi":
         return RedirectResponse("/yukle", status_code=303)
     return templates.TemplateResponse(request, "app/odeme_pos.html",
-                                      {"user": user, "payment": payment})
+                                      {"user": user, "payment": payment,
+                                       "aktif_sekme": "yukle"})
 
 
 @router.post("/yukle/{payment_id}/pos")
@@ -88,4 +90,5 @@ def sonuc_sayfa(request: Request, payment_id: int,
         "user": user,
         "payment": payment,
         "ogun_sayisi": int(user.balance // price),
+        "aktif_sekme": "yukle",
     })

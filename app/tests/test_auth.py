@@ -8,17 +8,33 @@ def test_password_hash_roundtrip():
     assert not verify_password("yanlis", h)
 
 def test_session_cookie_roundtrip():
-    c = create_session_cookie(42, 0)
+    c = create_session_cookie(42, 0, "personel")
+    assert read_session_cookie(c) == (42, 0)
+
+def test_session_cookie_roundtrip_admin():
+    c = create_session_cookie(42, 0, "admin")
     assert read_session_cookie(c) == (42, 0)
 
 def test_session_cookie_tampered():
-    c = create_session_cookie(42, 0) + "x"
+    c = create_session_cookie(42, 0, "personel") + "x"
     assert read_session_cookie(c) is None
 
 def test_session_cookie_old_format_rejected():
     from app.auth import _signer
     old = _signer.sign("42").decode()  # eski format: sürümsüz
     assert read_session_cookie(old) is None
+    eski_iki = _signer.sign("42:0").decode()  # rol işaretsiz eski format
+    assert read_session_cookie(eski_iki) is None
+
+def test_admin_cookie_expires_before_personel(monkeypatch):
+    # Admin çerezi 12 saatlik tazelik denetimine tabidir; süresi geçmiş
+    # sayılırsa (max_age=-1) okunamaz. Aynı yaştaki personel çerezi okunur.
+    from app.config import settings
+    monkeypatch.setattr(settings, "admin_session_age", -1)
+    admin_c = create_session_cookie(7, 0, "admin")
+    personel_c = create_session_cookie(7, 0, "personel")
+    assert read_session_cookie(admin_c) is None
+    assert read_session_cookie(personel_c) == (7, 0)
 
 def test_login_wrong_password(client, seeded_db):
     r = client.post("/login",

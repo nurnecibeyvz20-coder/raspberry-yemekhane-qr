@@ -91,7 +91,7 @@ def login(request: Request,
     response = RedirectResponse(url=target, status_code=303)
     response.set_cookie(
         "session",
-        create_session_cookie(user.id, user.session_version),
+        create_session_cookie(user.id, user.session_version, user.role),
         max_age=session_age_for(user.role),
         httponly=True,
         samesite="lax",
@@ -124,7 +124,7 @@ def forced_password_change(request: Request,
     response = RedirectResponse("/qr", status_code=303)
     response.set_cookie(
         "session",
-        create_session_cookie(user.id, user.session_version),
+        create_session_cookie(user.id, user.session_version, user.role),
         max_age=session_age_for(user.role),
         httponly=True,
         samesite="lax",

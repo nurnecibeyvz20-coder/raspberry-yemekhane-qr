@@ -117,6 +117,7 @@ def create_user(sicil_no: str = Form(...),
         soru_kayit = cevap_hash = None
     user = User(sicil_no=sicil_no.strip(), ad_soyad=ad_soyad.strip(),
                 role=role, password_hash=hash_password(password),
+                must_change_password=True,
                 telefon=telefon.strip() or None,
                 eposta=eposta.strip() or None,
                 gizli_soru=soru_kayit,

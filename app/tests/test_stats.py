@@ -32,6 +32,25 @@ def test_dashboard_stats_counts(db_session):
     assert len(s["son_islemler"]) == 2
     assert len(s["son_hatalar"]) == 1
 
+def test_bekleyen_kodlar_suresi_gecmis_gosterilmez(db_session):
+    from datetime import datetime, timedelta
+    from app.models import ResetCode
+    u = make_user(db_session, "k1")
+    simdi = datetime.now()
+    db_session.add(ResetCode(user_id=u.id, kod_hash="h1", kanal="sms",
+                             demo_gosterim="111111",
+                             created_at=simdi - timedelta(minutes=5),
+                             expires_at=simdi - timedelta(minutes=1)))
+    db_session.add(ResetCode(user_id=u.id, kod_hash="h2", kanal="sms",
+                             demo_gosterim="222222",
+                             created_at=simdi - timedelta(minutes=2),
+                             expires_at=simdi + timedelta(minutes=8)))
+    db_session.commit()
+    s = dashboard_stats(db_session)
+    kodlar = [k["kod"] for k in s["bekleyen_kodlar"]]
+    assert "222222" in kodlar
+    assert "111111" not in kodlar
+
 def test_paginate_basic(db_session):
     for i in range(120):
         make_user(db_session, f"p{i:03d}")
