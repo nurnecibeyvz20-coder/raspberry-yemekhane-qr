@@ -6,6 +6,7 @@
     <img src="/static/logo.jpg" alt="Karatay Belediyesi" style="height: 64px; margin-bottom: 8px;">
     <h1 class="baslik" style="font-size: 20px;">Kod Doğrulama</h1>
     <p class="soluk" style="margin-top: -8px;">{{ maske }} {% if kanal == 'eposta' %}adresine{% else %}numarasına{% endif %} kod gönderildi</p>
+    {% if demo_kod %}<div class="bant-uyari">Demo kodunuz: <strong>{{ demo_kod }}</strong></div>{% endif %}
     {% if error %}<div class="bant-hata">{{ error }}</div>{% endif %}
     <form method="post" action="/sifremi-unuttum/kod" style="text-align: left;">
       <label class="alan-etiket" for="kod">6 haneli kod</label>

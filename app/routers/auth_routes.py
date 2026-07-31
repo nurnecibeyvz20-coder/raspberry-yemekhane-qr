@@ -202,7 +202,12 @@ def unuttum_yontem_post(request: Request,
 
     resp = templates.TemplateResponse(
         request, "app/unuttum_kod.html",
-        {"maske": secili["maske"], "kanal": kanal, "error": None})
+        {"maske": secili["maske"], "kanal": kanal, "error": None,
+         "demo_kod": kod if (
+             kanal == "sms" and settings.sms_provider == "demo"
+         ) or (
+             kanal == "eposta" and settings.mail_provider == "demo"
+         ) else None})
     _reset_state_yaz(resp, user, "dogrulama", kanal)
     return resp
 

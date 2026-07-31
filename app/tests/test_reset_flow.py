@@ -73,7 +73,7 @@ def test_sms_akisi_uctan_uca(client, flow_db):
              .order_by(ResetCode.id.desc()).first())
     assert satir is not None
     assert satir.demo_gosterim  # demo sağlayıcı kodu sakladı
-    assert satir.demo_gosterim not in r.text  # kod ASLA sayfada gösterilmez
+    assert satir.demo_gosterim in r.text  # demo modunda kullanıcıya gösterilir
 
     r = client.post("/sifremi-unuttum/kod", data={"kod": satir.demo_gosterim})
     assert r.status_code == 200
@@ -100,6 +100,16 @@ def test_sms_akisi_uctan_uca(client, flow_db):
     assert r.status_code == 303  # yeni şifre çalışır
 
 
+def test_demo_sms_kodu_dogrulama_ekraninda_gosterilir(client, flow_db):
+    _kullanici(flow_db, telefon="05321234512")
+
+    client.post("/sifremi-unuttum", data={"sicil_no": "7001"})
+    r = client.post("/sifremi-unuttum/yontem", data={"kanal": "sms"})
+
+    satir = flow_db.query(ResetCode).filter_by(kanal="sms").one()
+    assert satir.demo_gosterim in r.text
+
+
 def test_yanlis_kod_hata_mesaji(client, flow_db):
     user = _kullanici(flow_db, telefon="05321234512")
     client.post("/sifremi-unuttum", data={"sicil_no": "7001"})
@@ -121,7 +131,7 @@ def test_gizli_soru_akisi(client, flow_db):
 
     r = client.post("/sifremi-unuttum/yontem", data={"kanal": "gizli_soru"})
     assert r.status_code == 200
-    assert "Doğduğunuz şehir?" in r.text  # soru gösterilir
+    assert "Doğduğunuz şehir?" not in r.text  # kurtarma bilgisi gösterilmez
 
     # dağınık büyük/küçük harf ve boşlukla cevap kabul edilmeli
     r = client.post("/sifremi-unuttum/soru", data={"cevap": "  ANKARA "})

@@ -7,7 +7,7 @@
     <h1 class="baslik" style="font-size: 20px;">Gizli Soru</h1>
     {% if error %}<div class="bant-hata">{{ error }}</div>{% endif %}
     <form method="post" action="/sifremi-unuttum/soru" style="text-align: left;">
-      <label class="alan-etiket" for="cevap">{{ soru }}</label>
+      <label class="alan-etiket" for="cevap">Gizli sorunuzun cevabı</label>
       <input class="alan" type="text" id="cevap" name="cevap" required autofocus autocomplete="off">
       <button class="btn btn-blok ust-bosluk" type="submit">Doğrula</button>
     </form>
