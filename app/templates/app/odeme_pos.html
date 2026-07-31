@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Ödeme — Demo POS{% endblock %}
+{% block content %}
+<div class="icerik" style="max-width: 420px;">
+  <div class="kart">
+    <div class="bant-hata" style="text-align: center;">TEST MODU — gerçek tahsilat yapılmaz</div>
+    <h1 class="baslik" style="font-size: 20px;">Kart Bilgileri</h1>
+    <div style="font-size: 28px; font-weight: 700; color: var(--k-birincil);">{{ payment.tutar }} TL</div>
+    <form method="post" action="/yukle/{{ payment.id }}/pos">
+      <label class="alan-etiket" for="kart_no">Kart Numarası</label>
+      <input class="alan" type="text" id="kart_no" name="kart_no" required
+             inputmode="numeric" autocomplete="off" maxlength="19"
+             placeholder="0000 0000 0000 0000">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div>
+          <label class="alan-etiket" for="skt">SKT (AA/YY)</label>
+          <input class="alan" type="text" id="skt" name="skt" maxlength="5"
+                 placeholder="12/30" autocomplete="off">
+        </div>
+        <div>
+          <label class="alan-etiket" for="cvv">CVV</label>
+          <input class="alan" type="text" id="cvv" name="cvv" maxlength="4"
+                 inputmode="numeric" placeholder="123" autocomplete="off">
+        </div>
+      </div>
+      <label class="alan-etiket" for="isim">Kart Üzerindeki İsim</label>
+      <input class="alan" type="text" id="isim" name="isim" autocomplete="off">
+      <button class="btn btn-blok ust-bosluk" type="submit">Öde</button>
+    </form>
+    <p class="soluk ust-bosluk" style="font-size: 13px;">
+      Test kartları: 4242 ile başlayan → başarılı, 4000 ile başlayan → red
+    </p>
+    <p><a href="/yukle" class="soluk" style="font-size: 14px;">Vazgeç</a></p>
+  </div>
+</div>
+<script>
+document.getElementById("kart_no").addEventListener("input", function () {
+    const rakam = this.value.replace(/\D/g, "").slice(0, 16);
+    this.value = rakam.replace(/(.{4})/g, "$1 ").trim();
+});
+</script>
+{% endblock %}

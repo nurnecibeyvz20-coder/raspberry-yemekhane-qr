@@ -32,6 +32,10 @@ def dashboard_stats(db: Session) -> dict:
                     .filter(Transaction.type == "yemek",
                             func.date(Transaction.created_at) == today)
                     .scalar())
+    bugun_yuklenen = (db.query(func.coalesce(func.sum(Transaction.amount), 0))
+                        .filter(Transaction.type == "yukleme",
+                                func.date(Transaction.created_at) == today)
+                        .scalar())
     son_islemler = (db.query(Transaction)
                       .order_by(Transaction.created_at.desc(),
                                 Transaction.id.desc())
@@ -45,6 +49,7 @@ def dashboard_stats(db: Session) -> dict:
         "aktif_personel": int(aktif_personel),
         "toplam_bakiye": Decimal(toplam_bakiye),
         "bugun_ciro": abs(Decimal(bugun_ciro)),
+        "bugun_yuklenen": Decimal(bugun_yuklenen),
         "son_islemler": son_islemler,
         "son_hatalar": son_hatalar,
     }

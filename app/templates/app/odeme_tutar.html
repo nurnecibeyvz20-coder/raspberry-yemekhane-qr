@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Bakiye Yükle{% endblock %}
+{% block content %}
+<div class="icerik" style="max-width: 420px;">
+  <div class="kart">
+    <h1 class="baslik" style="font-size: 20px;">Bakiye Yükle</h1>
+    <p class="soluk" style="margin-top: -8px;">Mevcut bakiye: {{ user.balance }} TL</p>
+    {% if error %}<div class="bant-hata">{{ error }}</div>{% endif %}
+    <form method="post" action="/yukle">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+        {% for t in hizli_tutarlar %}
+        <button class="btn btn-ikincil" type="submit" name="tutar" value="{{ t }}">{{ t }} TL</button>
+        {% endfor %}
+      </div>
+      <label class="alan-etiket" for="tutar">Veya tutar girin (50-5000 TL)</label>
+      <input class="alan" type="number" id="tutar" name="tutar"
+             min="50" max="5000" step="0.01" placeholder="Örn. 750">
+      <button class="btn btn-blok ust-bosluk" type="submit">Ödemeye Geç</button>
+    </form>
+    <p class="ust-bosluk"><a href="/qr" class="soluk" style="font-size: 14px;">QR sayfasına dön</a></p>
+  </div>
+</div>
+{% endblock %}

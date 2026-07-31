@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Ödeme Sonucu{% endblock %}
+{% block content %}
+<div class="icerik" style="max-width: 420px;">
+  {% if payment.durum == "basarili" %}
+  <div class="kart" style="text-align: center;">
+    <div style="font-size: 64px; color: var(--k-basari); line-height: 1;">&#10004;</div>
+    <h1 class="baslik" style="font-size: 20px; margin-top: 12px;">Yükleme Başarılı</h1>
+    <p class="soluk">{{ payment.tutar }} TL bakiyenize eklendi</p>
+    <div style="font-size: 32px; font-weight: 700; color: var(--k-birincil);">{{ user.balance }} TL</div>
+    <div class="soluk">Yeni bakiyeniz</div>
+    <div class="ust-bosluk"><span class="rozet">≈ {{ ogun_sayisi }} öğün</span></div>
+    <a class="btn btn-blok ust-bosluk" href="/qr">QR Sayfasına Dön</a>
+  </div>
+  {% else %}
+  <div class="kart" style="text-align: center;">
+    <div style="font-size: 64px; color: var(--k-hata); line-height: 1;">&#10008;</div>
+    <h1 class="baslik" style="font-size: 20px; margin-top: 12px;">Ödeme Başarısız</h1>
+    <div class="bant-hata">Kart reddedildi, bakiyeniz değişmedi</div>
+    <a class="btn btn-blok ust-bosluk" href="/yukle">Tekrar Dene</a>
+    <p class="ust-bosluk"><a href="/qr" class="soluk" style="font-size: 14px;">QR sayfasına dön</a></p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -7,7 +7,8 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import OperationalError
 
 from app.db import SessionLocal
-from app.routers import admin_routes, auth_routes, kiosk_routes, qr_routes
+from app.routers import (admin_routes, auth_routes, kiosk_routes,
+                         payment_routes, qr_routes)
 from app.startup import ensure_initial_admin
 from app.tts import preload_voice
 
@@ -33,6 +34,7 @@ app.include_router(auth_routes.router)
 app.include_router(admin_routes.router)
 app.include_router(qr_routes.router)
 app.include_router(kiosk_routes.router)
+app.include_router(payment_routes.router)
 
 @app.get("/health")
 def health():
