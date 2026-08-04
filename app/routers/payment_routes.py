@@ -13,7 +13,7 @@ from app.services.checkin import get_meal_price
 
 router = APIRouter()
 
-HIZLI_TUTARLAR = [125, 250, 500, 1000]
+HIZLI_TUTARLAR = [100, 250, 500, 1000]
 
 
 def _yukle_sayfasi(request: Request, user: User, error: str | None = None,

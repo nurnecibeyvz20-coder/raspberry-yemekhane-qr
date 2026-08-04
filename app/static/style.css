@@ -31,6 +31,12 @@ body {
 .auth-sahne { background: radial-gradient(circle at top, var(--k-yesil-100), var(--k-yesil-50) 48%, var(--k-beyaz)); }
 .auth-kart { border: 1px solid var(--k-cizgi); animation: auth-gir .35s ease-out; }
 .auth-aksiyonlar { display: grid; gap: var(--k-a1); margin-top: var(--k-a3); }
+.payment-card { height: 190px; margin: var(--k-a2) 0; perspective: 800px; transform-style: preserve-3d; transition: transform .5s; position: relative; }
+.payment-card.arka-yuz { transform: rotateY(180deg); }
+.payment-card-front, .payment-card-back { position: absolute; inset: 0; border-radius: var(--k-radius); padding: var(--k-a3); color: var(--k-beyaz); background: linear-gradient(135deg, var(--k-birincil), var(--k-birincil-acik)); backface-visibility: hidden; display: flex; flex-direction: column; justify-content: space-between; }
+.payment-card-back { transform: rotateY(180deg); background: var(--k-metin); }
+.magnetic-strip { height: 36px; background: var(--k-beyaz); opacity: .7; margin: 0 calc(var(--k-a3) * -1); }
+.cvv-preview { background: var(--k-beyaz); color: var(--k-metin); text-align: right; padding: var(--k-a1); }
 @keyframes auth-gir { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 a { color: var(--k-birincil-acik); }
 

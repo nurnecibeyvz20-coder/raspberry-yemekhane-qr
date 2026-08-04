@@ -9,7 +9,7 @@
     <form method="post" action="/yukle">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
         {% for t in hizli_tutarlar %}
-        <button class="btn btn-ikincil" type="submit" name="tutar" value="{{ t }}">{{ t }} TL</button>
+        <button class="btn btn-ikincil" type="button" data-tutar="{{ t }}">{{ t }} TL</button>
         {% endfor %}
       </div>
       <label class="alan-etiket" for="tutar">Veya tutar girin (50-5000 TL)</label>
@@ -20,4 +20,9 @@
     <p class="ust-bosluk"><a href="/qr" class="soluk" style="font-size: 14px;">QR sayfasına dön</a></p>
   </div>
 </div>
+<script>
+document.querySelectorAll("[data-tutar]").forEach((button) => {
+  button.addEventListener("click", () => { document.getElementById("tutar").value = button.dataset.tutar; });
+});
+</script>
 {% endblock %}

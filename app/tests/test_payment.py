@@ -223,6 +223,23 @@ def test_yukle_sayfalari_sekme_cubugu_icerir(client, seeded_db):
     login(client)
     r = client.get("/yukle")
     assert 'class="sekme-cubuk"' in r.text
+
+
+def test_quick_amount_buttons_fill_payment_input(client, seeded_db):
+    login(client)
+    r = client.get("/yukle")
+    assert 'data-tutar="100"' in r.text
+    assert 'data-tutar="1000"' in r.text
+    assert 'id="tutar"' in r.text
+
+
+def test_pos_page_has_live_card_preview_without_cvv_submission(client, seeded_db):
+    login(client)
+    r = client.post("/yukle", data={"tutar": "100"}, follow_redirects=False)
+    r = client.get(r.headers["location"])
+    assert 'id="payment-card"' in r.text
+    assert 'name="cvv"' not in r.text
+    assert 'id="card-brand-preview"' in r.text
     assert 'href="/yukle" class="aktif"' in r.text
 
     r = client.post("/yukle", data={"tutar": "500"}, follow_redirects=False)
