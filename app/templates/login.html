@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Giriş — Karatay Belediyesi Yemekhane{% endblock %}
 {% block content %}
-<div class="sayfa-orta">
-  <div class="kart" style="width: 100%; max-width: 380px; text-align: center;">
+<div class="sayfa-orta auth-sahne">
+  <div class="kart auth-kart" style="width: 100%; max-width: 380px; text-align: center;">
     <img src="/static/logo.jpg" alt="Karatay Belediyesi" style="height: 64px; margin-bottom: 8px;">
     <h1 class="baslik" style="font-size: 20px;">Karatay Belediyesi</h1>
     <p class="soluk" style="margin-top: -8px;">Yemekhane Sistemi</p>
@@ -15,8 +15,7 @@
       <input class="alan" type="password" id="password" name="password" required>
       <button class="btn btn-blok ust-bosluk" type="submit">Giriş Yap</button>
     </form>
-    <p class="ust-bosluk"><a href="/kayit" class="btn btn-ikincil">Kayıt Ol</a></p>
-    <p class="ust-bosluk"><a href="/sifremi-unuttum" class="soluk" style="font-size: 14px;">Şifremi unuttum</a></p>
+    <div class="auth-aksiyonlar"><a href="/kayit" class="btn btn-ikincil">Kayıt Ol</a><a href="/sifremi-unuttum" class="soluk" style="font-size: 14px;">Şifremi unuttum</a></div>
   </div>
 </div>
 {% endblock %}

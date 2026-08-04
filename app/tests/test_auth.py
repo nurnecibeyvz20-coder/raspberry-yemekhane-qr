@@ -94,6 +94,20 @@ def test_password_change_keeps_current_session(client, seeded_db):
     assert r.status_code == 303
     assert client.get("/qr").status_code == 200   # yeni çerez verildi
 
+
+def test_change_password_shows_success_message(client, seeded_db):
+    login(client)
+    r = client.post("/change-password",
+                    data={"old_password": "dogru123", "new_password": "yeni12345"},
+                    follow_redirects=True)
+    assert "başarıyla değiştirildi" in r.text.lower()
+
+
+def test_login_page_links_to_registration_and_recovery(client):
+    r = client.get("/login")
+    assert 'href="/kayit"' in r.text
+    assert 'href="/sifremi-unuttum"' in r.text
+
 def test_must_change_password_locks_pages(client, seeded_db):
     from app.db import get_db
     from app.main import app

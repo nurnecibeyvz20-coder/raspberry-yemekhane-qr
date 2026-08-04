@@ -137,6 +137,7 @@ def login(request: Request,
         httponly=True,
         samesite="lax",
     )
+    set_flash(response, "Şifreniz başarıyla değiştirildi.")
     return response
 
 @router.get("/sifre-degistir-zorunlu", response_class=HTMLResponse)

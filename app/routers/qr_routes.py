@@ -31,14 +31,19 @@ def qr_page(request: Request,
             user: User = Depends(current_user_unlocked),
             db: Session = Depends(get_db)):
     price = get_meal_price(db)
-    return templates.TemplateResponse(request, "qr.html", {
+    flash_data = get_flash(request)
+    response = templates.TemplateResponse(request, "qr.html", {
         "user": user,
         "meal_price": price,
         "low_balance": user.balance < price,
         "ogun_sayisi": int(user.balance // price),
         "ate_today": _ate_today(db, user.id),
         "aktif_sekme": "qr",
+        "flash": flash_data,
     })
+    if flash_data:
+        response.delete_cookie("flash")
+    return response
 
 @router.get("/gecmis", response_class=HTMLResponse)
 def gecmis_page(request: Request,
@@ -153,4 +158,5 @@ def change_password(request: Request,
         httponly=True,
         samesite="lax",
     )
+    set_flash(response, "Şifreniz başarıyla değiştirildi.")
     return response

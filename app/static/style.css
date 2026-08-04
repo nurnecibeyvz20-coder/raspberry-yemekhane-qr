@@ -28,6 +28,10 @@ body {
   margin: 0; font-family: var(--k-font);
   background: var(--k-yesil-50); color: var(--k-metin);
 }
+.auth-sahne { background: radial-gradient(circle at top, var(--k-yesil-100), var(--k-yesil-50) 48%, var(--k-beyaz)); }
+.auth-kart { border: 1px solid var(--k-cizgi); animation: auth-gir .35s ease-out; }
+.auth-aksiyonlar { display: grid; gap: var(--k-a1); margin-top: var(--k-a3); }
+@keyframes auth-gir { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 a { color: var(--k-birincil-acik); }
 
 /* ---- Topbar ---- */

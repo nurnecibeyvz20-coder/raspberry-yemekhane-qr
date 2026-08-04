@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Kayıt Ol — Karatay Belediyesi Yemekhane{% endblock %}
 {% block content %}
-<div class="sayfa-orta">
-  <div class="kart" style="width: 100%; max-width: 380px; text-align: center;">
+<div class="sayfa-orta auth-sahne">
+  <div class="kart auth-kart" style="width: 100%; max-width: 380px; text-align: center;">
     <h1 class="baslik" style="font-size: 20px;">Personel Başvurusu</h1>
     <p class="soluk">Başvurunuz yönetici onayından sonra aktif olur.</p>
     {% if error %}<div class="bant-hata">{{ error }}</div>{% endif %}
