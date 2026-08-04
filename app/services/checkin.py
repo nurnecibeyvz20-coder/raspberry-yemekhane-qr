@@ -59,16 +59,16 @@ def _fail(db: Session, raw: str, status: str,
 
 def process_checkin(db: Session, raw_token: str) -> CheckinResult:
     try:
-        user_id = verify_token(raw_token)
+        user_id, qr_secret = verify_token(raw_token)
     except ExpiredToken:
         return _fail(db, raw_token, "suresi_dolmus")
     except InvalidToken:
         return _fail(db, raw_token, "gecersiz")
 
     user = db.get(User, user_id)
-    if user is None:
+    if user is None or user.qr_secret != qr_secret:
         return _fail(db, raw_token, "gecersiz")
-    if not user.is_active:
+    if not user.is_active or user.registration_status != "approved":
         return _fail(db, raw_token, "hesap_pasif", user)
 
     bas, bit = get_service_hours(db)

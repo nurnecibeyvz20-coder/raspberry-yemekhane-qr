@@ -17,6 +17,7 @@ from app.models import MealEntry, Transaction, User
 from app.qr_token import generate_token
 from app.services.checkin import get_meal_price
 from app.services.reset import normalize as reset_normalize
+from app.services.user_qr import regenerate_qr_secret
 
 def _ate_today(db: Session, user_id: int) -> bool:
     return (db.query(MealEntry)
@@ -108,10 +109,13 @@ def profil_kurtarma(request: Request,
 
 @router.get("/api/qr-token")
 def qr_token(user: User = Depends(current_user_unlocked),
-             db: Session = Depends(get_db)):
+              db: Session = Depends(get_db)):
+    if not user.qr_secret:
+        regenerate_qr_secret(user)
+        db.commit()
     price = get_meal_price(db)
     return {
-        "token": generate_token(user.id),
+        "token": generate_token(user.id, user.qr_secret),
         "balance": str(user.balance),
         "low_balance": user.balance < price,
         "ate_today": _ate_today(db, user.id),

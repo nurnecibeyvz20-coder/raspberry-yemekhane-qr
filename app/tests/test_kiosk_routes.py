@@ -2,6 +2,15 @@ from decimal import Decimal
 from fastapi.testclient import TestClient
 from app.qr_token import generate_token
 from app.routers import kiosk_routes
+from app.models import User
+
+
+def _token_for_user(db, user_id):
+    from app.services.user_qr import regenerate_qr_secret
+    user = db.get(User, user_id)
+    secret = user.qr_secret or regenerate_qr_secret(user)
+    db.commit()
+    return generate_token(user.id, secret)
 
 def test_kiosk_allowed_from_docker_gateway(monkeypatch, seeded_db):
     from app.main import app
@@ -23,9 +32,10 @@ def test_kiosk_page_rejected_from_remote_ip(client_remote, seeded_db):
     assert client_remote.get("/kiosk").status_code == 403
 
 def test_checkin_success(client, seeded_db):
-    uid = seeded_db  # fixture user id döndürür
-    r = client.post("/api/checkin",
-                    json={"token": generate_token(uid)})
+    from app.db import get_db
+    from app.main import app
+    db = next(app.dependency_overrides[get_db]())
+    r = client.post("/api/checkin", json={"token": _token_for_user(db, seeded_db)})
     body = r.json()
     assert body["ok"] is True and body["status"] == "onay"
     assert body["balance"] == "375.00"
@@ -38,7 +48,10 @@ def test_checkin_invalid_token(client, seeded_db):
 def test_checkin_response_includes_signed_announcement(client, seeded_db):
     from app.qr_token import generate_token
     from app.tts import dogrula
-    r = client.post("/api/checkin", json={"token": generate_token(seeded_db)})
+    from app.db import get_db
+    from app.main import app
+    db = next(app.dependency_overrides[get_db]())
+    r = client.post("/api/checkin", json={"token": _token_for_user(db, seeded_db)})
     body = r.json()
     assert "anons" in body
     assert "Afiyet olsun" in body["anons"]["text"]
@@ -50,7 +63,10 @@ def test_checkin_outside_hours_response(client, seeded_db, monkeypatch):
         "app.services.checkin.get_service_hours",
         lambda db: (t(0, 0), t(0, 1)))   # hep kapali
     from app.qr_token import generate_token
-    r = client.post("/api/checkin", json={"token": generate_token(seeded_db)})
+    from app.db import get_db
+    from app.main import app
+    db = next(app.dependency_overrides[get_db]())
+    r = client.post("/api/checkin", json={"token": _token_for_user(db, seeded_db)})
     body = r.json()
     assert body["status"] == "saat_disi"
     assert body["saatler"] == "00:00 - 00:01"

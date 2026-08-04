@@ -39,6 +39,11 @@
       </div>
       <div class="soluk" style="font-size: 12px; margin-top: 4px;">Personel ilk girişte yeni şifre belirlemek zorunda kalır.</div>
     </form>
+    {% if user.registration_status == 'approved' and user.is_active %}
+    <form method="post" action="/admin/users/{{ user.id }}/regenerate-qr" class="ust-bosluk">
+      <button class="btn btn-ikincil" type="submit">QR Kodu Yenile</button>
+    </form>
+    {% endif %}
     <form method="post" action="/admin/users/{{ user.id }}/toggle-active">
       <button class="btn {{ 'btn-tehlike' if user.is_active else 'btn-ikincil' }}" type="submit">
         {{ "Pasifleştir" if user.is_active else "Aktifleştir" }}

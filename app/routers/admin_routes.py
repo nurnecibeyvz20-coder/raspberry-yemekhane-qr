@@ -15,7 +15,7 @@ from app.models import MealEntry, Setting, Transaction, User
 from app.services.checkin import get_meal_price, get_service_hours
 from app.services.reset import normalize as reset_normalize
 from app.services.stats import dashboard_stats, paginate
-from app.services.user_qr import approve_user
+from app.services.user_qr import approve_user, is_approved, regenerate_qr_secret
 
 router = APIRouter(dependencies=[Depends(require_admin)])
 
@@ -225,6 +225,18 @@ def reject_pending_user(user_id: int, db: Session = Depends(get_db)):
     set_flash(response, f"{user.ad_soyad} başvurusu reddedildi")
     return response
 
+
+@router.post("/admin/users/{user_id}/regenerate-qr")
+def regenerate_user_qr(user_id: int, db: Session = Depends(get_db)):
+    user = _get_user_or_404(db, user_id)
+    if not is_approved(user):
+        raise HTTPException(400, "Pasif veya onaysız kullanıcı için QR üretilemez")
+    regenerate_qr_secret(user)
+    db.commit()
+    response = RedirectResponse(f"/admin/users/{user.id}", status_code=303)
+    set_flash(response, "QR kodu yenilendi")
+    return response
+
 @router.post("/admin/users/{user_id}/load-balance")
 def load_balance(user_id: int, amount: str = Form(...),
                  next: str = Form(""),
@@ -239,6 +251,10 @@ def load_balance(user_id: int, amount: str = Form(...),
     if amt == 0:
         raise HTTPException(400, "Tutar sıfır olamaz")
     user = _get_user_or_404(db, user_id)
+    if not is_approved(user):
+        resp = _detail_or_list_redirect(user_id, next)
+        set_flash(resp, "Pasif veya onaysız kullanıcıya bakiye yüklenemez", "hata")
+        return resp
     new_balance = user.balance + amt
     db.add(Transaction(
         user_id=user.id,

@@ -7,12 +7,15 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models import Payment, Transaction, User
 from app.providers.payment import get_payment_provider
+from app.services.user_qr import is_approved
 
 TUTAR_ALT = Decimal("50")
 TUTAR_UST = Decimal("5000")
 
 
 def baslat(db: Session, user: User, tutar: Decimal) -> Payment:
+    if not is_approved(user):
+        raise ValueError("Pasif veya onaysız hesap ödeme yapamaz")
     if not tutar.is_finite() or tutar < TUTAR_ALT or tutar > TUTAR_UST:
         raise ValueError("Tutar 50-5000 TL arasında olmalı")
     payment = Payment(
@@ -57,6 +60,10 @@ def tamamla(db: Session, payment_id: int, kart_no: str) -> Payment:
 
     if sonuc.basarili:
         user = db.get(User, payment.user_id)
+        if not is_approved(user):
+            payment.durum = "basarisiz"
+            db.commit()
+            return payment
         new_balance = user.balance + payment.tutar
         tx = Transaction(user_id=user.id, type="yukleme",
                          amount=payment.tutar, balance_after=new_balance,
