@@ -97,38 +97,55 @@ def login(request: Request,
           sicil_no: str = Form(...),
           password: str = Form(...),
           db: Session = Depends(get_db)):
+    return _login(request, sicil_no, password, "personel", "login.html", "/qr", db)
+
+
+@router.get("/admin/login", response_class=HTMLResponse)
+def admin_login_page(request: Request):
+    return templates.TemplateResponse(request, "admin/login.html", {"error": None})
+
+
+@router.post("/admin/login")
+def admin_login(request: Request,
+                sicil_no: str = Form(...),
+                password: str = Form(...),
+                db: Session = Depends(get_db)):
+    return _login(request, sicil_no, password, "admin", "admin/login.html", "/admin", db)
+
+
+def _login(request: Request, sicil_no: str, password: str, expected_role: str,
+           template: str, target: str, db: Session):
     client_ip = request.client.host if request.client else "unknown"
     if not login_limiter.allow(client_ip):
         return templates.TemplateResponse(
-            request, "login.html",
+            request, template,
             {"error": "Çok fazla deneme"},
             status_code=429,
         )
 
     user = db.execute(
-        select(User).where(User.sicil_no == sicil_no)
+        select(User).where(User.sicil_no == sicil_no, User.role == expected_role)
     ).scalar_one_or_none()
 
     if user is not None and verify_password(password, user.password_hash):
         if user.registration_status == "pending":
             return templates.TemplateResponse(
-                request, "login.html", {"error": "Hesabınız yönetici onayı bekliyor"})
+                request, template, {"error": "Hesabınız yönetici onayı bekliyor"})
         if user.registration_status == "rejected":
             return templates.TemplateResponse(
-                request, "login.html", {"error": "Başvurunuz reddedildi"})
+                request, template, {"error": "Başvurunuz reddedildi"})
         if not user.is_active:
             return templates.TemplateResponse(
-                request, "login.html", {"error": "Hesabınız pasif durumda"})
+                request, template, {"error": "Hesabınız pasif durumda"})
     if (user is None or not user.is_active
             or user.registration_status != "approved"
             or not verify_password(password, user.password_hash)):
         return templates.TemplateResponse(
-            request, "login.html",
+            request, template,
             {"error": "Hatalı sicil no veya şifre"},
             status_code=200,
         )
 
-    target = "/admin" if user.role == "admin" else "/qr"
     response = RedirectResponse(url=target, status_code=303)
     response.set_cookie(
         "session",
@@ -137,7 +154,6 @@ def login(request: Request,
         httponly=True,
         samesite="lax",
     )
-    set_flash(response, "Şifreniz başarıyla değiştirildi.")
     return response
 
 @router.get("/sifre-degistir-zorunlu", response_class=HTMLResponse)

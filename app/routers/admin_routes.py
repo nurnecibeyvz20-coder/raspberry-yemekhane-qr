@@ -70,7 +70,7 @@ def personel_list(request: Request, q: str = "", page: int = 1,
         sort = "ad_soyad"
     if dir not in ("asc", "desc"):
         dir = "asc"
-    query = db.query(User)
+    query = db.query(User).filter(User.role == "personel")
     if q:
         query = query.filter(or_(User.sicil_no.ilike(f"%{q}%"),
                                  User.ad_soyad.ilike(f"%{q}%")))

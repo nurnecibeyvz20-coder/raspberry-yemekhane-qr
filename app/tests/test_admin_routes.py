@@ -13,7 +13,7 @@ def login_admin(client, db):
     a = User(sicil_no="9001", ad_soyad="Admin", role="admin",
              password_hash=hash_password("admin123"))
     db.add(a); db.commit()
-    client.post("/login", data={"sicil_no": "9001",
+    client.post("/admin/login", data={"sicil_no": "9001",
                 "password": "admin123"})
     return a
 
@@ -32,6 +32,16 @@ def test_create_user(client, admin_db):
     assert r.headers["location"] == "/admin/personel"
     u = admin_db.query(User).filter_by(sicil_no="3001").one()
     assert u.ad_soyad == "Yeni Kişi"
+
+
+def test_personnel_list_hides_admin_accounts(client, admin_db):
+    login_admin(client, admin_db)
+    admin_db.add(User(sicil_no="3009", ad_soyad="Personel", role="personel",
+                      password_hash="x"))
+    admin_db.commit()
+    r = client.get("/admin/personel")
+    assert "Personel" in r.text
+    assert 'href="/admin/users/1">Admin</a>' not in r.text
 
 
 def test_admin_approval_enables_login_and_assigns_qr(client, admin_db):

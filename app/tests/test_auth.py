@@ -108,6 +108,21 @@ def test_login_page_links_to_registration_and_recovery(client):
     assert 'href="/kayit"' in r.text
     assert 'href="/sifremi-unuttum"' in r.text
 
+
+def test_admin_login_rejects_personnel(client, seeded_db):
+    r = client.post("/admin/login",
+                    data={"sicil_no": "1001", "password": "dogru123"})
+    assert "Hatalı sicil no veya şifre" in r.text
+
+
+def test_personnel_login_rejects_admin(client, admin_db):
+    from app.tests.test_admin_routes import login_admin
+    login_admin(client, admin_db)
+    client.post("/logout")
+    r = client.post("/login",
+                    data={"sicil_no": "9001", "password": "admin123"})
+    assert "Hatalı sicil no veya şifre" in r.text
+
 def test_must_change_password_locks_pages(client, seeded_db):
     from app.db import get_db
     from app.main import app
