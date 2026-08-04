@@ -1,5 +1,6 @@
 from app.auth import (hash_password, verify_password,
-                      create_session_cookie, read_session_cookie)
+                       create_session_cookie, read_session_cookie)
+from app.models import User
 
 def test_password_hash_roundtrip():
     h = hash_password("gizli123")
@@ -49,6 +50,25 @@ def test_login_success_sets_cookie(client, seeded_db):
                     follow_redirects=False)
     assert r.status_code == 303
     assert "session" in r.cookies
+
+
+def test_registration_creates_pending_user(client, admin_db):
+    r = client.post("/kayit", data={"sicil_no": "8010", "ad_soyad": "Yeni",
+                                     "password": "guvenli123"},
+                    follow_redirects=False)
+    assert r.status_code == 303
+    user = admin_db.query(User).filter_by(sicil_no="8010").one()
+    assert user.registration_status == "pending"
+    assert user.is_active is False
+
+
+def test_pending_user_cannot_login_until_approved(client, admin_db):
+    user = User(sicil_no="8011", ad_soyad="Bekleyen", role="personel",
+                password_hash=hash_password("guvenli123"), is_active=False,
+                registration_status="pending")
+    admin_db.add(user); admin_db.commit()
+    r = client.post("/login", data={"sicil_no": "8011", "password": "guvenli123"})
+    assert "bekliyor" in r.text.lower()
 
 def login(client, sicil="1001", password="dogru123"):
     return client.post("/login", data={"sicil_no": sicil,

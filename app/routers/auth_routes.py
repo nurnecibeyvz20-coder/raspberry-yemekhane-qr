@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Form, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from itsdangerous import BadSignature, SignatureExpired, TimestampSigner
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import (RateLimiter, current_user, create_session_cookie,
@@ -62,6 +63,35 @@ def login_page(request: Request):
         resp.delete_cookie("flash")
     return resp
 
+
+@router.get("/kayit", response_class=HTMLResponse)
+def register_page(request: Request):
+    return templates.TemplateResponse(request, "register.html", {"error": None})
+
+
+@router.post("/kayit")
+def register(request: Request,
+             sicil_no: str = Form(...),
+             ad_soyad: str = Form(...),
+             password: str = Form(...),
+             db: Session = Depends(get_db)):
+    if len(password) < 8:
+        return templates.TemplateResponse(
+            request, "register.html", {"error": "Şifre en az 8 karakter olmalı"})
+    user = User(sicil_no=sicil_no.strip(), ad_soyad=ad_soyad.strip(),
+                role="personel", password_hash=hash_password(password),
+                is_active=False, registration_status="pending")
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return templates.TemplateResponse(
+            request, "register.html", {"error": "Bu sicil no zaten kayıtlı"})
+    response = RedirectResponse("/login", status_code=303)
+    set_flash(response, "Başvurunuz alındı, yönetici onayı bekleniyor")
+    return response
+
 @router.post("/login")
 def login(request: Request,
           sicil_no: str = Form(...),
@@ -79,7 +109,18 @@ def login(request: Request,
         select(User).where(User.sicil_no == sicil_no)
     ).scalar_one_or_none()
 
+    if user is not None and verify_password(password, user.password_hash):
+        if user.registration_status == "pending":
+            return templates.TemplateResponse(
+                request, "login.html", {"error": "Hesabınız yönetici onayı bekliyor"})
+        if user.registration_status == "rejected":
+            return templates.TemplateResponse(
+                request, "login.html", {"error": "Başvurunuz reddedildi"})
+        if not user.is_active:
+            return templates.TemplateResponse(
+                request, "login.html", {"error": "Hesabınız pasif durumda"})
     if (user is None or not user.is_active
+            or user.registration_status != "approved"
             or not verify_password(password, user.password_hash)):
         return templates.TemplateResponse(
             request, "login.html",

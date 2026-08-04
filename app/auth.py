@@ -63,6 +63,7 @@ def current_user(request: Request, db: Session = Depends(get_db)) -> User:
     parsed = read_session_cookie(cookie) if cookie else None
     user = db.get(User, parsed[0]) if parsed else None
     if (user is None or not user.is_active
+            or user.registration_status != "approved"
             or user.session_version != parsed[1]):
         raise HTTPException(status_code=303, headers={"Location": "/login"})
     return user

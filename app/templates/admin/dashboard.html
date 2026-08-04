@@ -44,6 +44,24 @@
 
 <div class="panel-cift">
   <div class="kart">
+    <h2 class="baslik">Bekleyen Kullanıcılar</h2>
+    <table class="tablo">
+      <thead><tr><th>Sicil No</th><th>Ad Soyad</th><th>İşlem</th></tr></thead>
+      <tbody>
+        {% for user in pending_users %}
+        <tr>
+          <td>{{ user.sicil_no }}</td><td>{{ user.ad_soyad }}</td>
+          <td class="islem-ikonlar">
+            <form method="post" action="/admin/users/{{ user.id }}/approve"><button class="btn" type="submit">Onayla</button></form>
+            <form method="post" action="/admin/users/{{ user.id }}/reject"><button class="btn btn-tehlike" type="submit">Reddet</button></form>
+          </td>
+        </tr>
+        {% else %}<tr><td colspan="3" class="soluk">Bekleyen kullanıcı yok</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="kart">
     <h2 class="baslik">Son İşlemler</h2>
     <table class="tablo">
       <thead>

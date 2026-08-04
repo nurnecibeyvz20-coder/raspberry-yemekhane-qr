@@ -33,6 +33,29 @@ def test_create_user(client, admin_db):
     u = admin_db.query(User).filter_by(sicil_no="3001").one()
     assert u.ad_soyad == "Yeni Kişi"
 
+
+def test_admin_approval_enables_login_and_assigns_qr(client, admin_db):
+    login_admin(client, admin_db)
+    user = User(sicil_no="8012", ad_soyad="Onay", role="personel",
+                password_hash=hash_password("guvenli123"), is_active=False,
+                registration_status="pending")
+    admin_db.add(user); admin_db.commit()
+    r = client.post(f"/admin/users/{user.id}/approve", follow_redirects=False)
+    assert r.status_code == 303
+    admin_db.refresh(user)
+    assert user.registration_status == "approved" and user.qr_secret
+
+
+def test_admin_rejection_keeps_record(client, admin_db):
+    login_admin(client, admin_db)
+    user = User(sicil_no="8013", ad_soyad="Red", role="personel",
+                password_hash=hash_password("guvenli123"), is_active=False,
+                registration_status="pending")
+    admin_db.add(user); admin_db.commit()
+    client.post(f"/admin/users/{user.id}/reject")
+    admin_db.refresh(user)
+    assert user.registration_status == "rejected"
+
 def test_create_user_must_change_password(client, admin_db):
     login_admin(client, admin_db)
     client.post("/admin/users/new",

@@ -15,7 +15,7 @@ class User(Base):
     balance: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     registration_status: Mapped[str] = mapped_column(
-        String(10), default="pending", server_default="pending")
+        String(10), default="approved", server_default="approved")
     qr_secret: Mapped[str | None] = mapped_column(String(64), unique=True,
                                                    nullable=True)
     telefon: Mapped[str | None] = mapped_column(String(20), nullable=True)

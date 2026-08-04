@@ -15,6 +15,7 @@ from app.models import MealEntry, Setting, Transaction, User
 from app.services.checkin import get_meal_price, get_service_hours
 from app.services.reset import normalize as reset_normalize
 from app.services.stats import dashboard_stats, paginate
+from app.services.user_qr import approve_user
 
 router = APIRouter(dependencies=[Depends(require_admin)])
 
@@ -53,6 +54,9 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     return _render_with_flash(
         request, "admin/dashboard.html",
         {"stats": stats,
+         "pending_users": (db.query(User)
+                             .filter(User.registration_status == "pending")
+                             .order_by(User.created_at.asc()).all()),
          "isim_map": isim_map,
          "meal_price": get_meal_price(db),
          "aktif_sayfa": "genel"})
@@ -194,6 +198,32 @@ def toggle_active(user_id: int, next: str = Form(""),
              else f"{user.ad_soyad} pasife alındı")
     set_flash(resp, mesaj)
     return resp
+
+
+@router.post("/admin/users/{user_id}/approve")
+def approve_pending_user(user_id: int, db: Session = Depends(get_db)):
+    user = _get_user_or_404(db, user_id)
+    if user.registration_status != "pending":
+        raise HTTPException(400, "Bu başvuru onay beklemiyor")
+    approve_user(user)
+    db.commit()
+    response = RedirectResponse("/admin", status_code=303)
+    set_flash(response, f"{user.ad_soyad} onaylandı")
+    return response
+
+
+@router.post("/admin/users/{user_id}/reject")
+def reject_pending_user(user_id: int, db: Session = Depends(get_db)):
+    user = _get_user_or_404(db, user_id)
+    if user.registration_status != "pending":
+        raise HTTPException(400, "Bu başvuru onay beklemiyor")
+    user.registration_status = "rejected"
+    user.is_active = False
+    user.session_version += 1
+    db.commit()
+    response = RedirectResponse("/admin", status_code=303)
+    set_flash(response, f"{user.ad_soyad} başvurusu reddedildi")
+    return response
 
 @router.post("/admin/users/{user_id}/load-balance")
 def load_balance(user_id: int, amount: str = Form(...),
