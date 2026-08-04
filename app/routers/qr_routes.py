@@ -1,3 +1,4 @@
+import calendar
 from datetime import date
 from decimal import Decimal
 
@@ -46,10 +47,17 @@ def qr_page(request: Request,
     return response
 
 @router.get("/gecmis", response_class=HTMLResponse)
-def gecmis_page(request: Request,
-                user: User = Depends(current_user_unlocked),
-                db: Session = Depends(get_db)):
-    ay_basi = date.today().replace(day=1)
+def gecmis_page(request: Request, year: int | None = None, month: int | None = None,
+                 user: User = Depends(current_user_unlocked),
+                 db: Session = Depends(get_db)):
+    today = date.today()
+    year = year or today.year
+    month = month or today.month
+    if month not in range(1, 13):
+        month = today.month
+    ay_basi = date(year, month, 1)
+    _, day_count = calendar.monthrange(year, month)
+    ay_sonu = date(year, month, day_count)
     gecmis = (db.query(Transaction)
                 .filter_by(user_id=user.id)
                 .order_by(Transaction.created_at.desc(),
@@ -57,18 +65,35 @@ def gecmis_page(request: Request,
                 .limit(20).all())
     ay_ogun = (db.query(MealEntry)
                  .filter(MealEntry.user_id == user.id,
-                         MealEntry.entry_date >= ay_basi)
+                          MealEntry.entry_date >= ay_basi,
+                          MealEntry.entry_date <= ay_sonu)
                  .count())
     ay_yukleme = (db.query(func.coalesce(func.sum(Transaction.amount), 0))
                     .filter(Transaction.user_id == user.id,
                             Transaction.type == "yukleme",
-                            Transaction.created_at >= ay_basi)
+                            Transaction.created_at >= ay_basi,
+                            Transaction.created_at < date(year + (month == 12),
+                                                           1 if month == 12 else month + 1, 1))
                     .scalar()) or Decimal("0")
+    meal_days = {entry.entry_date.day for entry in db.query(MealEntry).filter(
+        MealEntry.user_id == user.id, MealEntry.entry_date >= ay_basi,
+        MealEntry.entry_date <= ay_sonu)}
+    calendar_days = [{"day": day, "status": "alindi" if day in meal_days else
+                      "alinmadi" if date(year, month, day) <= today else "gelecek"}
+                     for day in range(1, day_count + 1)]
+    prev_year, prev_month = (year - 1, 12) if month == 1 else (year, month - 1)
+    next_year, next_month = (year + 1, 1) if month == 12 else (year, month + 1)
     return templates.TemplateResponse(request, "app/gecmis.html", {
         "user": user,
         "gecmis": gecmis,
         "ay_ogun": ay_ogun,
         "ay_yukleme": ay_yukleme,
+        "calendar_days": calendar_days,
+        "month_label": ("Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+                        "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık")[month - 1]
+                       + f" {year}",
+        "previous_month_url": f"/gecmis?year={prev_year}&month={prev_month}",
+        "next_month_url": f"/gecmis?year={next_year}&month={next_month}",
         "aktif_sekme": "gecmis",
     })
 

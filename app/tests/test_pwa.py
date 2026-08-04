@@ -39,6 +39,13 @@ def test_gecmis_shows_summary_and_history(client, seeded_db):
     assert "Bu ay" in r.text
     assert "+500.00" in r.text
 
+
+def test_history_shows_selected_month_calendar(client, seeded_db):
+    login(client)
+    r = client.get("/gecmis?year=2026&month=7")
+    assert "Temmuz 2026" in r.text
+    assert 'class="meal-day alinmadi"' in r.text
+
 def test_profil_requires_login(client, seeded_db):
     r = client.get("/profil", follow_redirects=False)
     assert r.status_code == 303

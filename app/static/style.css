@@ -37,6 +37,13 @@ body {
 .payment-card-back { transform: rotateY(180deg); background: var(--k-metin); }
 .magnetic-strip { height: 36px; background: var(--k-beyaz); opacity: .7; margin: 0 calc(var(--k-a3) * -1); }
 .cvv-preview { background: var(--k-beyaz); color: var(--k-metin); text-align: right; padding: var(--k-a1); }
+.calendar-nav { display: flex; align-items: center; justify-content: space-between; }
+.calendar-nav a { text-decoration: none; font-size: 20px; }
+.meal-calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.meal-day { aspect-ratio: 1; display: grid; place-items: center; border-radius: var(--k-radius-sm); background: var(--k-cizgi); font-weight: 600; }
+.meal-day.alindi { background: var(--k-yesil-100); color: var(--k-basari); }
+.meal-day.alinmadi { background: var(--k-hata-zemin); color: var(--k-hata); }
+.meal-day.gelecek { opacity: .45; }
 @keyframes auth-gir { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 a { color: var(--k-birincil-acik); }
 

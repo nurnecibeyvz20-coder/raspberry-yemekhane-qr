@@ -108,6 +108,7 @@ def test_demo_sms_kodu_dogrulama_ekraninda_gosterilir(client, flow_db):
 
     satir = flow_db.query(ResetCode).filter_by(kanal="sms").one()
     assert satir.demo_gosterim in r.text
+    assert f'value="{satir.demo_gosterim}"' in r.text
 
 
 def test_yanlis_kod_hata_mesaji(client, flow_db):

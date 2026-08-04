@@ -17,6 +17,10 @@
     </div>
   </div>
   <div class="kart">
+    <div class="calendar-nav"><a href="{{ previous_month_url }}">&#9664;</a><h2 class="baslik">{{ month_label }}</h2><a href="{{ next_month_url }}">&#9654;</a></div>
+    <div class="meal-calendar">{% for day in calendar_days %}<div class="meal-day {{ day.status }}">{{ day.day }}</div>{% endfor %}</div>
+  </div>
+  <div class="kart">
     <h2 class="baslik" style="font-size: 18px;">Geçmişim</h2>
     {% if gecmis %}
     {% set tur_adlari = {"yukleme": "Yükleme", "yemek": "Yemek", "duzeltme": "Düzeltme"} %}
