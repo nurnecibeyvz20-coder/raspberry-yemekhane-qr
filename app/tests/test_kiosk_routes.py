@@ -31,6 +31,12 @@ def test_checkin_rejected_from_remote_ip(client_remote, seeded_db):
 def test_kiosk_page_rejected_from_remote_ip(client_remote, seeded_db):
     assert client_remote.get("/kiosk").status_code == 403
 
+
+def test_kiosk_uses_horizontal_municipality_logo(client, seeded_db):
+    r = client.get("/kiosk")
+    assert 'src="/static/imagebelediye.png"' in r.text
+    assert 'class="kiosk-doku"' in r.text
+
 def test_checkin_success(client, seeded_db):
     from app.db import get_db
     from app.main import app

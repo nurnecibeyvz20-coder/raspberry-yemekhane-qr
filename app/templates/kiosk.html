@@ -10,8 +10,13 @@
   .screen.active { opacity: 1; pointer-events: auto; }
   #idle { z-index: 1; }
   #result, #connecting { z-index: 2; }
-  #idle { background: linear-gradient(180deg, var(--k-birincil), var(--k-birincil-koyu)); }
-  #idle .logo-yuvarlak { animation: nefes 4s ease-in-out infinite; }
+  #idle { overflow: hidden; background: radial-gradient(circle at 20% 20%, var(--k-birincil-acik), transparent 32%), linear-gradient(135deg, var(--k-birincil), var(--k-birincil-koyu)); }
+  .kiosk-doku { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .kiosk-doku::before, .kiosk-doku::after { content: ""; position: absolute; border: 1px solid rgba(255, 255, 255, .15); border-radius: 50%; }
+  .kiosk-doku::before { width: 620px; height: 620px; right: -210px; top: -270px; box-shadow: 0 0 0 48px rgba(255, 255, 255, .03), 0 0 0 108px rgba(255, 255, 255, .02); }
+  .kiosk-doku::after { width: 420px; height: 420px; left: -170px; bottom: -260px; }
+  .kiosk-icerik { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; }
+  #idle .kiosk-logo { animation: nefes 4s ease-in-out infinite; }
   @keyframes nefes { 0%, 100% { transform: scale(1); }
     50% { transform: scale(1.04); } }
   #result.active #result-icon { animation: ikon-pop .35s ease-out; }
@@ -21,11 +26,8 @@
     height: 4px; background: var(--k-beyaz); opacity: .8;
     animation: sayac 5s linear forwards; }
   @keyframes sayac { from { width: 0; } to { width: 100%; } }
-  #idle .logo-yuvarlak {
-    width: 200px; height: 200px; border-radius: 50%;
-    background: var(--k-beyaz); display: flex; align-items: center;
-    justify-content: center; box-shadow: var(--k-golge-buyuk); }
-  #idle .logo-yuvarlak img { width: 160px; height: auto; }
+  #idle .kiosk-logo { width: min(460px, 75vw); display: flex; align-items: center; justify-content: center; }
+  #idle .kiosk-logo img { display: block; width: 100%; max-height: 150px; object-fit: contain; }
   #idle h1 { font-size: 34px; font-weight: 600; margin: 24px 0 0; }
   #clock { font-size: 72px; font-weight: 200; margin: 8px 0; font-variant-numeric: tabular-nums; }
   #idle .yonerge { font-size: 26px; opacity: .9; }
@@ -40,10 +42,13 @@
   #scan-input { position: absolute; top: -100px; left: -100px; opacity: 0; }
 </style>
 <div id="idle" class="screen active">
-  <div class="logo-yuvarlak"><img src="/static/logo.jpg" alt="Karatay Belediyesi"></div>
-  <h1>Karatay Belediyesi — Yemekhane</h1>
-  <div class="saat" id="clock">--:--:--</div>
-  <div class="yonerge" id="yonerge">QR kodunuzu okutun</div>
+  <div class="kiosk-doku"></div>
+  <div class="kiosk-icerik">
+    <div class="kiosk-logo"><img src="/static/imagebelediye.png" alt="Karatay Belediyesi"></div>
+    <h1>Karatay Belediyesi — Yemekhane</h1>
+    <div class="saat" id="clock">--:--:--</div>
+    <div class="yonerge" id="yonerge">QR kodunuzu okutun</div>
+  </div>
 </div>
 <div id="result" class="screen">
   <div id="result-icon"></div>
