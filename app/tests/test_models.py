@@ -20,6 +20,15 @@ def test_user_pwa_defaults(db_session):
     assert u.session_version == 0
     assert u.telefon is None and u.gizli_soru is None
 
+
+def test_new_user_is_pending_without_qr(db_session):
+    u = User(sicil_no="m3", ad_soyad="Basvuru", role="personel",
+             password_hash="x")
+    db_session.add(u)
+    db_session.commit()
+    assert u.registration_status == "pending"
+    assert u.qr_secret is None
+
 def test_reset_code_and_payment_models(db_session):
     from datetime import datetime, timedelta
     from app.models import ResetCode, Payment

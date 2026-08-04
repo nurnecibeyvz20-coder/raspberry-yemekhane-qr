@@ -14,6 +14,10 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(200))
     balance: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    registration_status: Mapped[str] = mapped_column(
+        String(10), default="pending", server_default="pending")
+    qr_secret: Mapped[str | None] = mapped_column(String(64), unique=True,
+                                                   nullable=True)
     telefon: Mapped[str | None] = mapped_column(String(20), nullable=True)
     eposta: Mapped[str | None] = mapped_column(String(120), nullable=True)
     gizli_soru: Mapped[str | None] = mapped_column(String(200), nullable=True)
