@@ -51,6 +51,22 @@ def test_checkin_invalid_token(client, seeded_db):
     body = r.json()
     assert body["ok"] is False and body["status"] == "gecersiz"
 
+
+def test_kiosk_accepts_approved_guest_qr(client, seeded_db):
+    from datetime import date, time
+    from app.db import get_db
+    from app.guest_qr_token import generate_guest_token
+    from app.main import app
+    from app.models import GuestRequest
+    from app.services.guest_requests import approve_request
+    db = next(app.dependency_overrides[get_db]())
+    guest = GuestRequest(owner_id=seeded_db, ad="Misafir", soyad="Kişi", telefon="0555",
+        ziyaret_nedeni="Ziyaret", ziyaret_tarihi=date.today(), yemek_adedi=1,
+        baslangic_saati=time(0), bitis_saati=time(23, 59))
+    db.add(guest); db.flush(); approve_request(db, guest, seeded_db); db.commit()
+    r = client.post("/api/checkin", json={"token": generate_guest_token(guest.id, guest.qr_secret)})
+    assert r.json()["status"] == "misafir_onay"
+
 def test_checkin_response_includes_signed_announcement(client, seeded_db):
     from app.qr_token import generate_token
     from app.tts import dogrula

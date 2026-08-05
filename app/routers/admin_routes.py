@@ -11,11 +11,12 @@ from app.auth import hash_password, require_admin
 from app.db import get_db
 from app.deps import templates
 from app.flash import get_flash, set_flash
-from app.models import MealEntry, Setting, Transaction, User
+from app.models import GuestRequest, MealEntry, Setting, Transaction, User
 from app.services.checkin import get_meal_price, get_service_hours
 from app.services.reset import normalize as reset_normalize
 from app.services.stats import dashboard_stats, paginate
 from app.services.user_qr import approve_user, is_approved, regenerate_qr_secret
+from app.services.guest_requests import approve_request, reject_request
 
 router = APIRouter(dependencies=[Depends(require_admin)])
 
@@ -56,7 +57,8 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         {"stats": stats,
          "pending_users": (db.query(User)
                              .filter(User.registration_status == "pending")
-                             .order_by(User.created_at.asc()).all()),
+                              .order_by(User.created_at.asc()).all()),
+         "pending_guests": db.query(GuestRequest).filter_by(durum="pending").all(),
          "isim_map": isim_map,
          "meal_price": get_meal_price(db),
          "aktif_sayfa": "genel"})
@@ -224,6 +226,24 @@ def reject_pending_user(user_id: int, db: Session = Depends(get_db)):
     response = RedirectResponse("/admin", status_code=303)
     set_flash(response, f"{user.ad_soyad} başvurusu reddedildi")
     return response
+
+
+@router.post("/admin/guests/{request_id}/approve")
+def approve_guest(request_id: int, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    guest = db.get(GuestRequest, request_id)
+    if guest is None or guest.durum != "pending":
+        raise HTTPException(404, "Misafir talebi bulunamadı")
+    approve_request(db, guest, admin.id); db.commit()
+    return RedirectResponse("/admin", status_code=303)
+
+
+@router.post("/admin/guests/{request_id}/reject")
+def reject_guest(request_id: int, red_nedeni: str = Form(""), admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    guest = db.get(GuestRequest, request_id)
+    if guest is None or guest.durum != "pending":
+        raise HTTPException(404, "Misafir talebi bulunamadı")
+    reject_request(db, guest, admin.id, red_nedeni); db.commit()
+    return RedirectResponse("/admin", status_code=303)
 
 
 @router.post("/admin/users/{user_id}/regenerate-qr")

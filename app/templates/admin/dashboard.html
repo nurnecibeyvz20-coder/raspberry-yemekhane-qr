@@ -43,6 +43,7 @@
 </div>
 
 <div class="panel-cift">
+  <div class="kart"><h2 class="baslik">Bekleyen Misafir Talepleri</h2>{% for guest in pending_guests %}<p>{{ guest.ad }} {{ guest.soyad }} - {{ guest.ziyaret_tarihi }} <form method="post" action="/admin/guests/{{ guest.id }}/approve" style="display:inline"><button class="btn" type="submit">Onayla</button></form><form method="post" action="/admin/guests/{{ guest.id }}/reject" style="display:inline"><button class="btn btn-tehlike" type="submit">Reddet</button></form></p>{% else %}<p class="soluk">Bekleyen misafir talebi yok</p>{% endfor %}</div>
   <div class="kart">
     <h2 class="baslik">Bekleyen Kullanıcılar</h2>
     <table class="tablo">

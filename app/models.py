@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, time
 from decimal import Decimal
 from sqlalchemy import (String, Numeric, Boolean, ForeignKey, Date,
                         DateTime, Integer, UniqueConstraint, func)
@@ -81,4 +81,35 @@ class FailedAttempt(Base):
     raw_qr: Mapped[str] = mapped_column(String(500))
     reason: Mapped[str] = mapped_column(String(20))
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class GuestRequest(Base):
+    __tablename__ = "guest_requests"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    ad: Mapped[str] = mapped_column(String(80))
+    soyad: Mapped[str] = mapped_column(String(80))
+    tc_kimlik_no: Mapped[str | None] = mapped_column(String(11), nullable=True)
+    telefon: Mapped[str] = mapped_column(String(20))
+    ziyaret_nedeni: Mapped[str] = mapped_column(String(300))
+    ziyaret_tarihi: Mapped[date] = mapped_column(Date, index=True)
+    yemek_adedi: Mapped[int] = mapped_column(Integer)
+    kalan_hak: Mapped[int] = mapped_column(Integer, default=0)
+    baslangic_saati: Mapped[time] = mapped_column()
+    bitis_saati: Mapped[time] = mapped_column()
+    durum: Mapped[str] = mapped_column(String(12), default="pending")
+    qr_secret: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    red_nedeni: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class GuestRequestEvent(Base):
+    __tablename__ = "guest_request_events"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    request_id: Mapped[int] = mapped_column(ForeignKey("guest_requests.id"), index=True)
+    actor_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    event_type: Mapped[str] = mapped_column(String(20))
+    description: Mapped[str] = mapped_column(String(300))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

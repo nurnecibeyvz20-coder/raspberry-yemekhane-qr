@@ -66,6 +66,8 @@ def anons_metni(result: CheckinResult,
     if result.status == "onay":
         return (f"Afiyet olsun {result.ad_soyad}. "
                 f"Kalan bakiyeniz {int(result.balance)} lira.")
+    if result.status == "misafir_onay":
+        return f"Afiyet olsun {result.ad_soyad}."
     if result.status == "yetersiz_bakiye":
         return (f"{result.ad_soyad}, bakiyeniz yetersiz."
                 if result.ad_soyad else "Bakiyeniz yetersiz.")

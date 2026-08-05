@@ -18,6 +18,7 @@ if ('serviceWorker' in navigator) {
   <a href="/gecmis" class="{{ 'aktif' if aktif_sekme == 'gecmis' else '' }}"><span class="sekme-ikon">&#128203;</span><span>Geçmiş</span></a>
   <a href="/yukle" class="{{ 'aktif' if aktif_sekme == 'yukle' else '' }}"><span class="sekme-ikon">&#128179;</span><span>Yükle</span></a>
   <a href="/profil" class="{{ 'aktif' if aktif_sekme == 'profil' else '' }}"><span class="sekme-ikon">&#128100;</span><span>Profil</span></a>
+  <a href="/misafir" class="{{ 'aktif' if aktif_sekme == 'misafir' else '' }}"><span class="sekme-ikon">&#128101;</span><span>Misafir</span></a>
 </nav>
 {% if flash %}
 <div class="toast toast-{{ flash.tur }}" id="toast">{{ flash.mesaj }}</div>

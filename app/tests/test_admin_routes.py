@@ -44,6 +44,19 @@ def test_personnel_list_hides_admin_accounts(client, admin_db):
     assert 'href="/admin/users/1">Admin</a>' not in r.text
 
 
+def test_admin_approves_guest_request(client, admin_db):
+    from datetime import date, time
+    from app.models import GuestRequest
+    admin = login_admin(client, admin_db)
+    guest = GuestRequest(owner_id=admin.id, ad="Misafir", soyad="Kişi", telefon="0555",
+                         ziyaret_nedeni="Ziyaret", ziyaret_tarihi=date.today(), yemek_adedi=1,
+                         baslangic_saati=time(0), bitis_saati=time(23, 59))
+    admin_db.add(guest); admin_db.commit()
+    client.post(f"/admin/guests/{guest.id}/approve")
+    admin_db.refresh(guest)
+    assert guest.durum == "approved" and guest.qr_secret
+
+
 def test_admin_approval_enables_login_and_assigns_qr(client, admin_db):
     login_admin(client, admin_db)
     user = User(sicil_no="8012", ad_soyad="Onay", role="personel",

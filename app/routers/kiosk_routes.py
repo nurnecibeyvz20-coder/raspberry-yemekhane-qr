@@ -10,6 +10,7 @@ from app.db import get_db
 from app.deps import templates
 from app.services import checkin as checkin_service
 from app.services.checkin import get_service_hours, process_checkin
+from app.services.guest_requests import use_guest_qr
 from app.tts import anons_metni, dogrula, imzala, uret
 
 router = APIRouter()
@@ -58,6 +59,8 @@ def kiosk_page(request: Request):
 @router.post("/api/checkin", dependencies=[Depends(localhost_only)])
 def checkin(body: CheckinBody, db: Session = Depends(get_db)):
     r = process_checkin(db, body.token)
+    if not r.ok and r.status == "gecersiz":
+        r = use_guest_qr(db, body.token)
     saatler_str = None
     if r.status == "saat_disi":
         # checkin modulu uzerinden cagrilir ki process_checkin ile ayni
