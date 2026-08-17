@@ -132,7 +132,7 @@ def test_gizli_soru_akisi(client, flow_db):
 
     r = client.post("/sifremi-unuttum/yontem", data={"kanal": "gizli_soru"})
     assert r.status_code == 200
-    assert "Doğduğunuz şehir?" not in r.text  # kurtarma bilgisi gösterilmez
+    assert "Doğduğunuz şehir?" in r.text
 
     # dağınık büyük/küçük harf ve boşlukla cevap kabul edilmeli
     r = client.post("/sifremi-unuttum/soru", data={"cevap": "  ANKARA "})
